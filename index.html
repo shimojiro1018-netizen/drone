@@ -158,11 +158,32 @@ summary{cursor:pointer;font-weight:700}
   body.kart #sticks,body.kart #tele{display:none}body.kart #mini{width:120px!important;height:120px!important}}
 .settings label.gp{grid-column:1/-1}
 @media (prefers-reduced-motion:reduce){#count.pop{animation:none}}
+button:disabled{opacity:.45;cursor:default}
+.lbf{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 20px;margin-bottom:12px}
+.lbf label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px}
+.lbf input{font-family:var(--f-body);font-size:16px;font-weight:400;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:8px 10px;min-width:0}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.plist li{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:700}
+.plist i{width:14px;height:14px;border-radius:50%;flex:none}
+#nMsg{font-weight:700;margin:0;min-height:1.7em}
+#toast,#count{pointer-events:none}
+#kItem{pointer-events:auto;cursor:pointer}
+#touch{position:fixed;inset:0;pointer-events:none;z-index:5}
+#kartHud{z-index:6}
+#touch .tz{position:absolute;top:38%;bottom:0;width:50%;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none}
+#tzL{left:0}#tzR{right:0}
+#touch .base,#touch .knob{position:absolute;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:.45}
+#touch .base{width:128px;height:128px;border:2px solid rgba(255,255,255,.7);background:rgba(22,32,43,.2)}
+#touch .knob{width:56px;height:56px;background:rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#touch .tz.act .base,#touch .tz.act .knob{opacity:1}
+#touch small{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);text-align:center;color:rgba(255,255,255,.9);font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none}
+body.touch #sticks{display:none}body.touch #mini{pointer-events:none}
 @media (max-width:600px){#inst .txt{font-size:15px}#score{font-size:32px}#sticks{width:170px;height:80px}#mini{width:120px;height:120px}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}#inst.clear{animation:none}}
 </style>
 
 <canvas id="gl"></canvas>
+<div id="touch" hidden><div class="tz" id="tzL"><i class="base"></i><i class="knob"></i><small>上昇・下降 ／ 旋回</small></div><div class="tz" id="tzR"><i class="base"></i><i class="knob"></i><small>前後 ／ 左右</small></div></div>
 <div id="ui">
   <div class="row" id="top">
     <div class="panel" id="tele">
@@ -209,6 +230,7 @@ summary{cursor:pointer;font-weight:700}
         <button class="course" data-c="atti" type="button"><span class="nm">異常事態における飛行</span><span class="spec">ATTI（位置安定OFF）・ 高度3.5m ・ 制限6分</span><span class="ds">風で流される機体を当て舵で止める。機首は前方固定で左右移動、指示が出たら緊急着陸地点へ最短で。</span><span class="best" data-best="atti"></span></button>
         <button class="course" data-c="free" type="button"><span class="nm">自由練習</span><span class="spec">採点なし ・ GPS⇄ATTI切替</span><span class="ds">ホバリングや機首を手前に向けた操作など、苦手な動きだけを繰り返す。</span><span class="best"></span></button>
         <button class="course race" data-c="kart" type="button"><span class="nm">ドローングランプリ</span><span class="spec">かんたん ・ 3周 ・ ライバル5機</span><span class="ds">前へは勝手に進み、高度も自動。左右に曲がるだけで飛べる。コイン・ダッシュリング・アイテムを使って1位をめざす。</span><span class="best" data-best="kart"></span></button>
+        <button class="course race" data-c="online" type="button"><span class="nm">オンライン対戦</span><span class="spec">友達と ・ 最大4人 ・ 合言葉で部屋</span><span class="ds">グランプリのコースを3周して先着を競う。アイテムなし・採点なし。スマホはタッチ操作で飛べる。</span></button>
         <button class="course race" data-c="race" type="button"><span class="nm">レース</span><span class="spec">お遊び ・ ゲート9個 ・ 最高9m/s</span><span class="ds">番号順にゲートをくぐってタイムを競う。採点なし。視点は試験と同じ操縦者の位置（Yで追いかけ視点にも切替可）。</span><span class="best" data-best="race"></span></button>
       </div>
     </div>
@@ -252,6 +274,29 @@ summary{cursor:pointer;font-weight:700}
     <div id="rFail" style="font-weight:700;color:var(--bad)"></div>
     <div class="rbody"><div><canvas id="rMap" width="600" height="600"></canvas><div class="rlegend" id="rLegend"><b style="color:#1e6bff">青線</b>：飛行した軌跡　<b style="color:#d42a14">赤丸の番号</b>：減点した場所</div></div><div><div class="sec" id="rListH">減点の内訳</div><ul id="rlist"></ul></div></div>
     <div class="btnrow"><button class="primary" id="rAgain" type="button">もう一度（A / R）</button><button id="rMenu" type="button">科目を選ぶ（B）</button></div>
+  </div>
+</div>
+
+<div class="ov" id="lobby" hidden>
+  <div class="card">
+    <div>
+      <h1>オンライン対戦</h1>
+      <p class="lead">合言葉を決めて部屋を作り、友達に同じ合言葉（または招待リンク）を伝えます。最大4人。ドローングランプリのコースを3周して先着を競います。アイテムなし・採点なし。</p>
+    </div>
+    <div id="lbJoin">
+      <div class="lbf">
+        <label for="nName">名前<input id="nName" type="text" maxlength="10" autocomplete="off" placeholder="例：たろう"></label>
+        <label for="nPass">合言葉<input id="nPass" type="text" maxlength="24" autocomplete="off" placeholder="例：そらとぶたこやき"></label>
+      </div>
+      <div class="btnrow"><button class="primary" id="nHost" type="button">部屋を作る</button><button id="nJoin" type="button">部屋に入る</button><button id="nBack" type="button">メニューへ</button></div>
+    </div>
+    <div id="lbRoom" hidden>
+      <div class="sec">部屋「<span id="nRoomNm"></span>」<small id="nWait"></small></div>
+      <ul id="nPlayers" class="plist"></ul>
+      <div class="btnrow"><button class="primary" id="nStart" type="button">スタート</button><button id="nCopy" type="button">招待リンクをコピー</button><button id="nLeave" type="button">退出</button></div>
+    </div>
+    <p id="nMsg" aria-live="polite"></p>
+    <p class="note">合言葉はひらがな・漢字・英数字なんでも使えます（3文字以上）。同じ合言葉の部屋がすでにあるときは作れないので、別の合言葉にしてください。回線によっては端末どうしが直接つながらないことがあります。そのときは Wi-Fi とモバイル回線を切り替えて試してください。</p>
   </div>
 </div>
 
@@ -303,6 +348,7 @@ const GATE_R=1.2;
 COURSES.race={name:'レース',alt:2,limit:0,gps:true,nose:'travel',pilot:8.5,race:true,pads:[{n:'A',p:[0,0]}],labels:{},pylons:[],
   build(){return[]},land:[0,0],landName:'A地点',mapView:{span:30,u0:-15,v1:17}};
 COURSES.kart={name:'ドローングランプリ',alt:3,limit:0,gps:true,nose:'travel',pilot:-4,kart:true,pads:[],labels:{},pylons:[],build(){return[]},land:[0,0],landName:''};
+COURSES.online=COURSES.kart; // メニューで選んだときの見た目用。開始するとロビーへ
 const LAPS=3,TRK_HW=4,RING_R=1.9;
 const KLV={weak:{nm:'よわい',base:7.2,rb:0.4},normal:{nm:'ふつう',base:8.8,rb:1},strong:{nm:'つよい',base:10.2,rb:1.3}};
 const ITEMS={turbo:{nm:'ターボ',uses:1},turbo3:{nm:'ターボ×3',uses:3},magnet:{nm:'マグネット',uses:1},thunder:{nm:'イナズマ',uses:1}};
@@ -530,6 +576,7 @@ function fail(msg){if(phase==='done')return;failMsg=msg;toast('不合格',''+get
 
 function resetDrone(){Object.assign(st,{u:0,v:0,y:0,vu:0,vv:0,vy:0,yaw:0,onGround:true,tiltF:0,tiltR:0})}
 function startCourse(key){
+  if(key==='online'){openLobby();return}
   clearTimeout(resultTimer);try{document.activeElement&&document.activeElement.blur()}catch(e){}
   courseKey=key;course=COURSES[key];resetDrone();waitI=null;noseT=0;noseDed=false;spWarn=false;trail=[];trailT=0;
   deds=[];failMsg='';runT=0;legIdx=0;hoverT=0;hoverOut=false;emerg=null;emergClock=0;emergAt=4+Math.random()*9;smoothCool=0;
@@ -539,7 +586,7 @@ function startCourse(key){
   drawMarkings(course);setPylons(course.pylons,course.pylonColor);pilotMark.position.set(0,.03,course.pilot);
   progDone=0;progTotal=key==='free'?0:2+legs.filter(l=>l.say).length;renderProg();
   if(S.sfx){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}}
-  renderDeds();$('#result').hidden=true;$('#menu').hidden=true;mode='run';
+  renderDeds();$('#result').hidden=true;$('#menu').hidden=true;$('#lobby').hidden=true;mode='run';
   $('#scoreBox').style.display=key==='free'?'none':'';
   gateGroup.visible=!!course.race;gateIdx=0;prevS=null;splits=[];
   const kt=!!course.kart;document.body.classList.toggle('kart',kt);kartGroup.visible=kt;mkPlane.visible=!kt;pilotMark.visible=!kt;sock.visible=!kt;
@@ -547,7 +594,7 @@ function startCourse(key){
   $('#scoreLbl').textContent=(course.race||kt)?'タイム':'持ち点';
   if(course.race){paintGates(0);progTotal=GATES.length;renderProg();$('#score').textContent=fmtMs(0);
     const rb=store.get('raceBest',null);$('#timer').textContent=rb!=null?'ベスト '+fmtMs(rb):'ベスト —';}
-  else if(kt){S.view='chase';$('#score').textContent=fmtMs(0);const kb=store.get('kartBest_'+S.kartCpu,{});$('#timer').textContent=kb.t!=null?'ベスト '+fmtMs(kb.t):'ベスト —';}
+  else if(kt){S.view='chase';$('#score').textContent=fmtMs(0);const kb=store.get('kartBest_'+S.kartCpu,{});$('#timer').textContent=NET.on?'部屋「'+NET.pass+'」':kb.t!=null?'ベスト '+fmtMs(kb.t):'ベスト —';}
   else if(S.view==='chase')S.view='pilot';
   if(kt){startKart()}
   else if(course.race){phase='raceReady';instruct('離陸すると計測スタート。番号順にゲートをくぐってください。');$('#iSub').textContent='オレンジのゲートが次の目標';}
@@ -556,6 +603,7 @@ function startCourse(key){
 }
 function endRun(){phase='done';clearTimeout(resultTimer);resultTimer=setTimeout(showResult,course.kart?2600:900)}
 function showResult(){
+  $('#rAgain').textContent='もう一度（A / R）';$('#rMenu').textContent='科目を選ぶ（B）';
   if(course.kart){showKartResult();return}
   $('#rScoreL').textContent=course.race?'タイム':'持ち点';$('#rListH').textContent=course.race?'ゲートごとの通過タイム':'減点の内訳';
   $('#rLegend').innerHTML=course.race?'<b style="color:#1e6bff">青線</b>：飛行した軌跡　<b>短い線</b>：ゲート（番号つき）':'<b style="color:#1e6bff">青線</b>：飛行した軌跡　<b style="color:#d42a14">赤丸の番号</b>：減点した場所';$('#rScoreU').textContent=course.race?'':'/ 100';
@@ -583,7 +631,8 @@ function showRaceResult(){
   if(!splits.length){const li=document.createElement('li');li.innerHTML='<span></span><span></span><span>通過したゲートなし</span>';ul.appendChild(li)}
   drawResultMap();updateBest();$('#result').hidden=false;
 }
-function openMenu(){clearTimeout(resultTimer);mode='menu';engStop();hideCount();$('#kartHud').hidden=true;setSel(Math.max(0,cards.findIndex(c=>c.dataset.c===courseKey)));$('#result').hidden=true;$('#menu').hidden=false;phase='idle';updateBest();try{speechSynthesis.cancel()}catch(e){}}
+function openMenu(){if(NET.on){backToLobby();return}
+  clearTimeout(resultTimer);mode='menu';engStop();hideCount();$('#kartHud').hidden=true;setSel(Math.max(0,cards.findIndex(c=>c.dataset.c===courseKey)));$('#result').hidden=true;$('#lobby').hidden=true;$('#menu').hidden=false;phase='idle';updateBest();try{speechSynthesis.cancel()}catch(e){}}
 function updateBest(){const b=store.get('best',{});document.querySelectorAll('[data-best]').forEach(el=>{
   if(el.dataset.best==='kart'){const kb=store.get('kartBest_'+S.kartCpu,{});el.textContent=kb.t!=null?'最高 '+kb.r+'位 ・ ベスト '+fmtMs(kb.t)+'（ライバル：'+(KLV[S.kartCpu]||KLV.normal).nm+'）':'';return}if(el.dataset.best==='race'){const rb=store.get('raceBest',null);el.textContent=rb!=null?'ベスト '+fmtMs(rb):'';return}const v=b[el.dataset.best];el.textContent=v!=null?'自己ベスト '+v+'点（合格）':''})}
 
@@ -604,6 +653,7 @@ function action(code){
     if(code==='Enter'){if(!(document.activeElement&&document.activeElement.classList.contains('course')))startCourse(courseKey);return}
   }
   if(mode==='run'&&course.kart&&(code==='Enter'||code==='Space'||code==='padA'||code==='padX')){useItem();return}
+  if(NET.on){if(mode==='result'&&(code==='Enter'||code==='Space'||code==='padA'))backToLobby();else if(code==='Escape'||code==='padB'){if(mode==='run'||mode==='result')backToLobby()}else if(code==='KeyV'||code==='padY')cycleView();return}
   if(code==='Enter'||code==='Space'||code==='padA'){
     if(mode==='result')startCourse(courseKey);
     else if(mode==='run'&&phase==='free'){resetDrone()}
@@ -637,6 +687,7 @@ function readInput(dt){
   }
   const tgt={thr:(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0),yaw:(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0),ele:(keys.has('ArrowUp')?1:0)-(keys.has('ArrowDown')?1:0),ail:(keys.has('ArrowRight')?1:0)-(keys.has('ArrowLeft')?1:0)};
   for(const k in kb){const d=tgt[k]-kb[k];kb[k]+=clamp(d,-3*dt,3*dt);if(Math.abs(inp[k])<Math.abs(kb[k]))inp[k]=kb[k]}
+  if(TCH.L.id!=null||TCH.R.id!=null){const tv={thr:TCH.L.y,yaw:TCH.L.x,ele:TCH.R.y,ail:TCH.R.x};for(const k in tv){const v=Math.abs(tv[k])<0.08?0:tv[k];if(Math.abs(inp[k])<Math.abs(v))inp[k]=v}}
   return inp;
 }
 
@@ -840,13 +891,15 @@ const GRID=[[-3,-1.6],[-3,1.6],[-7,-1.6],[-7,1.6],[-11,-1.6],[-11,1.6]],PLAYER_S
 function playerProg(){return K.laps*TR.L+K.idx*TR.L/TR.N}
 function startKart(){
   Object.assign(K,{laps:-1,half:true,spd:0,coins:0,boostT:0,boostAmt:0,charge:0,item:null,itemUses:0,pending:null,rollT:0,magnetT:0,bumpCool:0,respawnT:0,off:false,ground:false,wrongT:0,lapStart:0,lapTimes:[],count:3.6,firstPress:null,rank:5,finRank:0,finT:0,hudKey:''});
-  const g=GRID[PLAYER_SLOT],p=sampleAt(g[0],g[1]);
+  const g=GRID[NET.on?NET.me:PLAYER_SLOT],p=sampleAt(g[0],g[1]);
   Object.assign(st,{u:p.u,v:p.v,y:p.y,vu:0,vv:0,vy:0,yaw:Math.atan2(p.fu,p.fv),onGround:false,tiltF:0,tiltR:0});
   K.idx=nearestIdx(st.u,st.v,0,TR.N>>1);K.prevIdx=K.idx;
   {const fx=Math.sin(st.yaw),fz=-Math.cos(st.yaw);camera.position.set(st.u-fx*5.4,st.y+1.9,-st.v-fz*5.4);camLook.set(st.u+fx*4,st.y+0.3,-st.v+fz*4)}
   const sk=[0.6,0.3,0,-0.3,-0.6].sort(()=>Math.random()-.5);let si=0;
   RIVALS.forEach((r,i)=>{const slot=GRID[i<PLAYER_SLOT?i:i+1];Object.assign(r,{prog:slot[0],lat0:slot[1],spd:0,skill:sk[si++],w:.3+Math.random()*.35,ph:Math.random()*6.28,t:0,boostT:0,slowT:0,finT:null,estT:null,bank:0,yaw:0});placeRival(r,0)});
-  KR.coins.forEach(c=>{c.on=true;c.obj.visible=true;c.u=c.u0;c.v=c.v0;c.y=c.y0});KR.boxes.forEach(b=>{b.on=true;b.obj.visible=true});KR.rings.forEach(r=>r.cool=0);
+  KR.coins.forEach(c=>{c.on=true;c.obj.visible=true;c.u=c.u0;c.v=c.v0;c.y=c.y0});KR.boxes.forEach(b=>{b.on=!NET.on;b.obj.visible=!NET.on});KR.rings.forEach(r=>r.cool=0);
+  // 対戦ではCPUとアイテムを外し、人数を友達の数に合わせる
+  RIVALS.forEach(r=>r.obj.visible=!NET.on);$('#kItem').hidden=NET.on;$('.kRank span').textContent='位 / '+(NET.on?NET.players.length:RIVALS.length+1);if(NET.on)K.rank=NET.me+1;
   wind.base=0;wind.u=wind.v=0;
   progTotal=LAPS;progDone=0;renderProg();
   phase='kartCount';instruct('カウントダウンのあとスタート。前へは勝手に進みます。',false);
@@ -868,7 +921,7 @@ function kBoost(t,a){K.boostAmt=K.boostT>0?Math.max(K.boostAmt,a):a;K.boostT=Mat
 function respawn(){const p=TR.P[K.idx];Object.assign(st,{u:p.u,v:p.v,y:p.y,vu:0,vv:0,vy:0,yaw:Math.atan2(p.fu,p.fv)});K.spd=3;K.charge=0}
 function stepKart(dt,inp){
   st.prop+=dt*60;
-  if(phase==='kartCount'){st.vu=st.vv=st.vy=0;RIVALS.forEach(r=>placeRival(r,0));return}
+  if(phase==='kartCount'){st.vu=st.vv=st.vy=0;if(!NET.on)RIVALS.forEach(r=>placeRival(r,0));return}
   const easy=S.kartCtl!=='drone',done=phase==='done';
   K.idx=nearestIdx(st.u,st.v,K.idx,40);
   const P=TR.P[K.idx],lat=(st.u-P.u)*P.fv-(st.v-P.v)*P.fu;K.lat=lat;
@@ -898,7 +951,7 @@ function stepKart(dt,inp){
   if(st.y>16){st.y=16;st.vy=Math.min(0,st.vy)}
   const tf=clamp(0.1+K.spd*0.022+(K.boostT>0?0.12:0),0,0.5),tr=steer*0.42;
   st.tiltF+=(tf-st.tiltF)*Math.min(1,dt/0.15);st.tiltR+=(tr-st.tiltR)*Math.min(1,dt/0.15);
-  kartRivals(dt);engUpd();
+  if(!NET.on)kartRivals(dt);engUpd();
 }
 function kartRivals(dt){const pp=playerProg(),lv=KLV[S.kartCpu]||KLV.normal;
   for(const r of RIVALS){
@@ -929,8 +982,10 @@ function onLap(){
   if(K.laps>=LAPS){finishKart();return}
   if(K.laps===LAPS-1){instruct('ファイナルラップ！',false);say('ファイナルラップ');showCount('FINAL LAP')}
   else if(K.laps>=1)instruct('ラップ '+(K.laps+1)+' / '+LAPS,false)}
-function finishKart(){K.finT=runT;K.finRank=1+RIVALS.filter(r=>r.finT!=null).length;
-  RIVALS.forEach(r=>{if(r.finT==null)r.estT=runT+(LAPS*TR.L-r.prog)/Math.max(4,r.spd||4)});
+function finishKart(){K.finT=runT;
+  if(NET.on){K.finRank=1+NET.players.filter(p=>p.id!==NET.me&&NET.fins[p.id]>=0).length;netSendFin(runT)}
+  else{K.finRank=1+RIVALS.filter(r=>r.finT!=null).length;
+    RIVALS.forEach(r=>{if(r.finT==null)r.estT=runT+(LAPS*TR.L-r.prog)/Math.max(4,r.spd||4)})}
   showCount(K.finRank+'位',true);instruct('ゴール！ '+K.finRank+'位　タイム '+fmtMs(runT),false);say('ゴール！ '+K.finRank+'位');
   blip(K.finRank<=3?[784,988,1175,1568]:[523,659,784],.28,'square',.1,.11);$('#iSub').textContent='';kartHudUpd(true);endRun()}
 function judgeKart(dt,inp){
@@ -940,7 +995,7 @@ function judgeKart(dt,inp){
     if(inp.ele>0.5||inp.thr>0.5){if(K.firstPress==null)K.firstPress=K.count}else K.firstPress=null;
     if(K.count<=0){phase='kart';runT=0;showCount('GO!');blip([1047],.45,'square',.12);engStart();
       if(K.firstPress!=null&&K.firstPress<=1.5){kBoost(1.1,6);toast('スタートダッシュ！','#ffd54a')}
-      instruct('GO！ ダッシュリングをくぐると加速、？の箱でアイテム',false)}
+      instruct(NET.on?'GO！ ダッシュリングをくぐると加速':'GO！ ダッシュリングをくぐると加速、？の箱でアイテム',false)}
     return}
   runT+=dt;trailT+=dt;if(trailT>=0.1){trailT=0;trail.push([st.u,st.v])}
   // 周回
@@ -949,7 +1004,9 @@ function judgeKart(dt,inp){
   else if(a<N*0.25&&b>N*0.75){K.laps--;K.half=true}
   if(b>N*0.4&&b<N*0.6)K.half=true;
   K.prevIdx=b;
-  const pp=playerProg();K.rank=1+RIVALS.filter(r=>r.finT!=null||r.prog>pp).length;
+  const pp=playerProg();
+  K.rank=NET.on?1+NET.players.filter(p=>{if(p.id===NET.me)return false;const f=NET.fins[p.id],r=NET.remotes.get(p.id);return f>=0||(f==null&&!!r&&r.prog>pp)}).length
+    :1+RIVALS.filter(r=>r.finT!=null||r.prog>pp).length;
   // ダッシュリング
   for(const r of KR.rings){r.cool-=dt;if(r.cool>0)continue;const du=st.u-r.u,dv=st.v-r.v,al=du*r.fu+dv*r.fv;
     if(Math.abs(al)<0.8){const la=du*r.fv-dv*r.fu,dy=st.y-r.y;if(Math.hypot(la,dy)<RING_R){r.cool=1.5;r.flash=0.5;kBoost(1.0,5);toast('ダッシュ！','#ffd54a')}}}
@@ -958,14 +1015,14 @@ function judgeKart(dt,inp){
     const dx=st.u-c.u,dv=st.v-c.v,dy=st.y-c.y,d=Math.hypot(dx,dv,dy);
     if(K.magnetT>0&&d<6){const k=Math.min(1,dt*5);c.u+=dx*k;c.v+=dv*k;c.y+=dy*k}
     if(d<1.25){c.on=false;c.t=10;c.obj.visible=false;c.u=c.u0;c.v=c.v0;c.y=c.y0;K.coins=Math.min(10,K.coins+1);blip([1319,1760],.12,'square',.07,.06)}}
-  // アイテムボックス
-  for(const bx of KR.boxes){if(!bx.on){bx.t-=dt;if(bx.t<=0){bx.on=true;bx.obj.visible=true}continue}
+  // アイテムボックス（対戦ではなし）
+  if(!NET.on)for(const bx of KR.boxes){if(!bx.on){bx.t-=dt;if(bx.t<=0){bx.on=true;bx.obj.visible=true}continue}
     if(Math.hypot(st.u-bx.u,st.v-bx.v,st.y-bx.y)<1.4){bx.on=false;bx.t=4;bx.obj.visible=false;
       if(!K.item&&K.rollT<=0){K.rollT=1.1;K.pending=pickItem();blip([523,659,784,1047],.08,'square',.07,.05)}}}
   if(K.rollT>0){K.rollT-=dt;if(K.rollT<=0){K.item=K.pending;K.itemUses=ITEMS[K.item].uses;blip([1047,1319],.15,'triangle',.1,.08);instruct('アイテム：'+ITEMS[K.item].nm+'　A（Space）で使う',false);kartHudUpd(true)}}
   // ライバルとの接触
   K.bumpCool-=dt;
-  for(const r of RIVALS){const dx=st.u-r.u,dv=st.v-r.v,dy=st.y-r.y;
+  if(!NET.on)for(const r of RIVALS){const dx=st.u-r.u,dv=st.v-r.v,dy=st.y-r.y;
     if(K.bumpCool<=0&&Math.hypot(dx,dv,dy)<0.95){K.bumpCool=1;const h=Math.hypot(dx,dv)||1;st.u+=dx/h*0.5;st.v+=dv/h*0.5;st.vu+=dx/h*3;st.vv+=dv/h*3;blip([150],.15,'square',.1);
       if(K.boostT>0){r.slowT=Math.max(r.slowT,1.2);toast('はじき飛ばした！','#ffd54a')}else{K.spd*=0.65;if(K.coins>0)K.coins--;toast('ぶつかった！','#ffe08a')}}}
   // 逆走
@@ -1011,9 +1068,10 @@ function drawKartTrack(c,P,s,ww){c.lineJoin='round';c.lineCap='round';
   const a=TR.P[0],l=P(a.u+a.fv*TRK_HW,a.v-a.fu*TRK_HW),r=P(a.u-a.fv*TRK_HW,a.v+a.fu*TRK_HW);c.strokeStyle='#fff';c.lineWidth=Math.max(2,ww);c.lineCap='butt';c.beginPath();c.moveTo(l[0],l[1]);c.lineTo(r[0],r[1]);c.stroke()}
 function drawKartMini(){const c=mmC,W=320,span=66,u0=-33,v1=36,s=W/span,P=(u,v)=>[(u-u0)*s,(v1-v)*s];
   c.clearRect(0,0,W,W);c.fillStyle='#5f8546';c.fillRect(0,0,W,W);drawKartTrack(c,P,s,4);
-  for(const r of RIVALS){const q=P(r.u,r.v);c.fillStyle='#'+r.col.toString(16).padStart(6,'0');c.beginPath();c.arc(q[0],q[1],7,0,Math.PI*2);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke()}
-  const q=P(st.u,st.v);c.save();c.translate(q[0],q[1]);c.rotate(st.yaw);c.beginPath();c.moveTo(0,-13);c.lineTo(8,9);c.lineTo(0,5);c.lineTo(-8,9);c.closePath();c.fillStyle='#ff7a1a';c.fill();c.strokeStyle='#fff';c.lineWidth=2.5;c.stroke();c.restore()}
+  for(const r of NET.on?NET.remotes.values():RIVALS){const q=P(r.u,r.v);c.fillStyle=hexCol(r.col);c.beginPath();c.arc(q[0],q[1],7,0,Math.PI*2);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke()}
+  const q=P(st.u,st.v);c.save();c.translate(q[0],q[1]);c.rotate(st.yaw);c.beginPath();c.moveTo(0,-13);c.lineTo(8,9);c.lineTo(0,5);c.lineTo(-8,9);c.closePath();c.fillStyle=NET.on?hexCol(NCOL[NET.me]):'#ff7a1a';c.fill();c.strokeStyle='#fff';c.lineWidth=2.5;c.stroke();c.restore()}
 function showKartResult(){
+  if(NET.on){showNetResult();return}
   mode='result';engStop();hideCount();$('#kartHud').hidden=true;
   const lvl=S.kartCpu,rk=K.finRank,t=K.finT,key='kartBest_'+lvl,b=store.get(key,{});let rec=false;
   if(b.t==null||t<b.t){b.t=t;rec=true}if(b.r==null||rk<b.r)b.r=rk;store.set(key,b);
@@ -1102,6 +1160,133 @@ function renderPip(){const el=$('#pip'),show=S.pip&&mode==='run'&&!course.kart;e
   renderer.setScissorTest(false);renderer.setViewport(0,0,window.innerWidth,H);drone.visible=true}
 
 /* ---------- loop ---------- */
+/* ---------- オンライン対戦（PeerJS。ホストが全員の状態を中継する星型） ---------- */
+const NCOL=[0xff7a1a,0x2f6fe0,0x2aa55a,0xff5fa8],NMAX=4,NDELAY=0.15;
+const NET={on:false,host:false,peer:null,conn:null,conns:[],me:0,players:[],fins:{},pass:'',racing:false,remotes:new Map(),sendT:0,joinTm:0};
+const hexCol=c=>'#'+c.toString(16).padStart(6,'0');
+function cyrb(str,seed){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return(h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0')}
+// 合言葉はそのままでは Peer ID に使えない（日本語不可）ので、正規化してハッシュにする
+const normPass=s=>String(s||'').normalize('NFKC').trim().toLowerCase().replace(/\s+/g,'');
+const roomId=p=>'nitoudrone-'+cyrb(p,1)+cyrb(p,7);
+let peerLib=null;
+function loadPeer(){if(window.Peer)return Promise.resolve();if(peerLib)return peerLib;
+  peerLib=new Promise((ok,ng)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js';s.onload=ok;s.onerror=()=>{peerLib=null;ng(new Error('load'))};document.head.appendChild(s)});return peerLib}
+function nMsg(t,bad){const el=$('#nMsg');el.textContent=t||'';el.style.color=bad?'var(--bad)':''}
+function setBusy(b){$('#nHost').disabled=b;$('#nJoin').disabled=b}
+function openLobby(){clearTimeout(resultTimer);mode='lobby';phase='idle';engStop();hideCount();$('#kartHud').hidden=true;$('#menu').hidden=true;$('#result').hidden=true;$('#lobby').hidden=false;
+  $('#lbJoin').hidden=NET.on;$('#lbRoom').hidden=!NET.on;renderPlayers();try{speechSynthesis.cancel()}catch(e){}}
+function backToLobby(){if(mode==='run'&&(phase==='kart'||phase==='kartCount'))netSendFin(-1);if(NET.host)NET.racing=false;openLobby()}
+function renderPlayers(){const ul=$('#nPlayers');ul.innerHTML='';
+  NET.players.forEach(p=>{const li=document.createElement('li');li.innerHTML='<i></i><span></span>';li.firstChild.style.background=hexCol(p.col);li.lastChild.textContent=p.name+(p.id===0?'（ホスト）':'')+(p.id===NET.me?'（あなた）':'');ul.appendChild(li)});
+  $('#nRoomNm').textContent=NET.pass;const b=$('#nStart');b.hidden=!NET.host;b.disabled=NET.players.length<2;
+  $('#nWait').textContent=!NET.host?'ホストのスタートを待っています':NET.players.length<2?'友達が入るのを待っています':NET.players.length+'人そろいました'}
+function readForm(){const name=$('#nName').value.trim().slice(0,10),raw=$('#nPass').value.trim(),pass=normPass(raw);
+  if(!name){nMsg('名前を入れてください。',true);return null}if(pass.length<3){nMsg('合言葉は3文字以上にしてください。',true);return null}
+  store.set('netName',name);return{name,raw,pass}}
+async function netOpen(asHost){const f=readForm();if(!f)return;netClose();setBusy(true);nMsg('接続しています…');
+  try{await loadPeer()}catch(e){setBusy(false);nMsg('通信用の部品を読み込めませんでした。インターネット接続を確認してください。',true);return}
+  NET.pass=f.raw;
+  // 動作確認用：localhost で ?peer=local を付けると、手元の PeerServer（ポート9000）を使う
+  const opt=location.hostname==='localhost'&&/[?&]peer=local\b/.test(location.search)?{host:'localhost',port:9000,path:'/',secure:false,debug:0}:{debug:0};
+  const peer=asHost?new Peer(roomId(f.pass),opt):new Peer(opt);NET.peer=peer;
+  peer.on('error',netErr);
+  peer.on('disconnected',()=>{if(NET.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}});
+  if(asHost){
+    peer.on('open',()=>{NET.on=true;NET.host=true;NET.me=0;NET.players=[{id:0,name:f.name,col:NCOL[0]}];setBusy(false);nMsg('部屋を作りました。友達に合言葉か招待リンクを伝えてください。');openLobby()});
+    peer.on('connection',hostAccept);
+  }else peer.on('open',()=>{const c=peer.connect(roomId(f.pass),{metadata:{name:f.name}});NET.conn=c;
+    NET.joinTm=setTimeout(()=>{if(!NET.on){netClose();setBusy(false);nMsg('相手の端末と直接つながりませんでした。Wi-Fi とモバイル回線を切り替えると、つながる場合があります。',true)}},15000);
+    c.on('data',clientData);
+    c.on('close',()=>{if(NET.conn!==c)return;const was=NET.on;netClose();if(was){openLobby();nMsg('ホストとの接続が切れました。',true)}});
+    c.on('error',()=>{})});
+}
+function netErr(e){const t=e&&e.type;if(NET.on)return; // つながった後のサーバー切断は、端末どうしの通信には影響しない
+  const m={'unavailable-id':'この合言葉の部屋はもうあります。参加するなら「部屋に入る」、新しく作るなら別の合言葉にしてください。',
+    'peer-unavailable':'その合言葉の部屋が見つかりません。ホストが先に「部屋を作る」を押しているか、合言葉が同じか確認してください。',
+    'browser-incompatible':'このブラウザはオンライン対戦に対応していません。',
+    'network':'接続サーバーにつながりません。通信状況を確認してください。','server-error':'接続サーバーにつながりません。少し待ってからやり直してください。',
+    'socket-error':'接続サーバーにつながりません。通信状況を確認してください。','socket-closed':'接続サーバーとの通信が切れました。'};
+  netClose();setBusy(false);nMsg(m[t]||('接続できませんでした（'+(t||'不明')+'）'),true)}
+function netClose(){clearTimeout(NET.joinTm);const p=NET.peer,c=NET.conn,cs=NET.conns;
+  Object.assign(NET,{on:false,host:false,peer:null,conn:null,conns:[],players:[],fins:{},racing:false});
+  cs.forEach(x=>{try{x.close()}catch(e){}});if(c)try{c.close()}catch(e){}if(p)try{p.destroy()}catch(e){}
+  [...NET.remotes.keys()].forEach(removeRemote)}
+function netLeave(){netClose();nMsg('');courseKey='online';openMenu()}
+function broadcast(d,except){for(const c of NET.conns)if(c!==except&&c.open)try{c.send(d)}catch(e){}}
+function toHost(d){if(NET.conn&&NET.conn.open)try{NET.conn.send(d)}catch(e){}}
+function broadcastLobby(){broadcast({t:'lobby',players:NET.players});renderPlayers()}
+function hostAccept(c){
+  c.on('open',()=>{
+    const used=NET.players.map(p=>p.id),id=[1,2,3].find(i=>!used.includes(i));
+    if(NET.racing||id==null){c.send({t:NET.racing?'busy':'full'});setTimeout(()=>{try{c.close()}catch(e){}},500);return}
+    const name=String((c.metadata&&c.metadata.name)||'ゲスト').slice(0,10);
+    c.pid=id;NET.conns.push(c);NET.players.push({id,name,col:NCOL[id]});c.send({t:'welcome',id});broadcastLobby();toast(name+' が入りました','#ffe08a')});
+  c.on('data',d=>{if(c.pid==null||!d)return;
+    if(Array.isArray(d)){d[1]=c.pid;recvState(d);broadcast(d,c);return}
+    if(d.t==='fin'){setFin(c.pid,d.time);broadcast({t:'fin',id:c.pid,time:d.time},c)}});
+  const drop=()=>{const i=NET.conns.indexOf(c);if(i<0)return;NET.conns.splice(i,1);const p=NET.players.find(p=>p.id===c.pid);
+    NET.players=NET.players.filter(p=>p.id!==c.pid);removeRemote(c.pid);broadcastLobby();if(p)toast(p.name+' が退出しました','#ffe08a')};
+  c.on('close',drop);c.on('error',drop)}
+function clientData(d){if(!d)return;if(Array.isArray(d)){recvState(d);return}
+  if(d.t==='welcome'){clearTimeout(NET.joinTm);NET.on=true;NET.host=false;NET.me=d.id;setBusy(false);nMsg('部屋に入りました。');openLobby()}
+  else if(d.t==='lobby'){NET.players=d.players;for(const id of [...NET.remotes.keys()])if(!d.players.some(p=>p.id===id))removeRemote(id);if(mode==='lobby')renderPlayers()}
+  else if(d.t==='full'||d.t==='busy'){clearTimeout(NET.joinTm);netClose();setBusy(false);nMsg(d.t==='full'?'この部屋は満員です（最大4人）。':'この部屋はいまレース中です。少し待ってからもう一度「部屋に入る」を押してください。',true)}
+  else if(d.t==='start')startNetRace();
+  else if(d.t==='fin')setFin(d.id,d.time)}
+function hostStart(){if(!NET.host||NET.players.length<2)return;broadcast({t:'start'});startNetRace()}
+function startNetRace(){NET.racing=true;NET.fins={};NET.remotes.forEach(r=>{r.buf.length=0;r.prog=0});startCourse('kart')}
+function netSendFin(time){NET.fins[NET.me]=time;if(NET.host)broadcast({t:'fin',id:0,time});else toHost({t:'fin',time})}
+function setFin(id,time){NET.fins[id]=time;const p=NET.players.find(p=>p.id===id);
+  if(mode==='run'&&p)toast(p.name+(time<0?' がリタイア':' がゴール！'),'#ffe08a');
+  if(mode==='result')showNetResult()}
+/* 友達の機体：受け取った位置を少し遅らせて、前後の2点の間を補って表示する */
+function nameTag(txt,col){const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
+  x.font='700 34px sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineWidth=7;x.strokeStyle='rgba(22,32,43,.85)';x.strokeText(txt,128,34);x.fillStyle=hexCol(col);x.fillText(txt,128,34);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));s.scale.set(2.4,.6,1);return s}
+function remoteOf(id){let r=NET.remotes.get(id);if(r)return r;const p=NET.players.find(p=>p.id===id),col=p?p.col:NCOL[id%NMAX];
+  const obj=makeRival(col),tag=nameTag(p?p.name:'?',col);kartGroup.add(obj);kartGroup.add(tag);
+  r={id,col,obj,tag,buf:[],prog:0,u:0,v:0};NET.remotes.set(id,r);return r}
+function removeRemote(id){const r=NET.remotes.get(id);if(!r)return;kartGroup.remove(r.obj);kartGroup.remove(r.tag);NET.remotes.delete(id)}
+function recvState(d){const id=d[1];if(id===NET.me||!NET.players.some(p=>p.id===id))return;const r=remoteOf(id);
+  r.buf.push({t:performance.now()/1000,u:d[2],v:d[3],y:d[4],yaw:d[5],tf:d[6],tr:d[7]});if(r.buf.length>30)r.buf.shift();r.prog=d[8]}
+function netFrame(dt){if(!course.kart||(mode!=='run'&&mode!=='result'))return;
+  if(mode==='run'){NET.sendT-=dt;if(NET.sendT<=0){NET.sendT=1/15;const r2=x=>Math.round(x*100)/100;
+    const d=['s',NET.me,r2(st.u),r2(st.v),r2(st.y),r2(st.yaw),r2(st.tiltF),r2(st.tiltR),r2(playerProg())];if(NET.host)broadcast(d);else toHost(d)}}
+  const tt=performance.now()/1000-NDELAY;
+  NET.remotes.forEach(r=>{const b=r.buf;if(!b.length)return;const i=b.findIndex(s=>s.t>tt);let s;
+    if(i<0)s=b[b.length-1];else if(i===0)s=b[0];
+    else{const a=b[i-1],c=b[i],k=(tt-a.t)/(c.t-a.t),L=(p,q)=>p+(q-p)*k;s={u:L(a.u,c.u),v:L(a.v,c.v),y:L(a.y,c.y),yaw:a.yaw+angWrap(c.yaw-a.yaw)*k,tf:L(a.tf,c.tf),tr:L(a.tr,c.tr)}}
+    r.u=s.u;r.v=s.v;r.obj.position.set(s.u,s.y+0.07,-s.v);r.obj.rotation.set(-s.tf,-s.yaw,-s.tr);r.tag.position.set(s.u,s.y+0.8,-s.v);
+    r.obj.userData.props.forEach((p,j)=>p.rotation.y=simT*60*(j%2?1:-1))})}
+function showNetResult(){mode='result';engStop();hideCount();$('#kartHud').hidden=true;
+  const key=e=>e.t==null?2e9:e.t<0?1e9:e.t,ent=NET.players.map(p=>({p,t:NET.fins[p.id]})).sort((a,b)=>key(a)-key(b));
+  const myT=NET.fins[NET.me],rk=1+ent.filter(e=>e.p.id!==NET.me&&e.t>=0&&e.t<myT).length;
+  const stp=$('#rStamp');stp.textContent=myT>=0?rk+'位':'リタイア';stp.className='stamp '+(myT>=0&&rk===1?'pass':myT>=0?'mid':'fail');
+  $('#rCourse').textContent='オンライン対戦（部屋「'+NET.pass+'」）';$('#rScoreL').textContent='タイム';$('#rScore').textContent=myT>=0?fmtMs(myT):'—';$('#rScoreU').textContent='';
+  $('#rTime').textContent=ent.some(e=>e.t==null)?'まだ飛んでいる人がいます':'全員の結果が出ました';$('#rFail').textContent='';$('#rListH').textContent='順位表';
+  $('#rLegend').innerHTML='<b style="color:#1e6bff">青線</b>：飛んだ軌跡　<b>白線</b>：スタート';
+  const ul=$('#rlist');ul.innerHTML='';let n=0;
+  ent.forEach(e=>{const li=document.createElement('li'),ok=e.t>=0;if(ok)n++;if(e.p.id===NET.me)li.className='me';
+    li.innerHTML=`<span class="p" style="color:inherit">${ok?n+'位':'—'}</span><span class="t">${ok?fmtMs(e.t):e.t==null?'飛行中':'リタイア'}</span><span></span>`;li.lastChild.textContent=e.p.name+(e.p.id===NET.me?'（あなた）':'');ul.appendChild(li)});
+  K.lapTimes.forEach((lt,i)=>{const li=document.createElement('li');li.innerHTML=`<span class="p" style="color:var(--muted)">LAP${i+1}</span><span class="t">${lt.toFixed(2)}秒</span><span></span>`;ul.appendChild(li)});
+  drawResultMap();$('#rAgain').textContent='ロビーに戻る（A）';$('#rMenu').textContent='退出してメニューへ';$('#result').hidden=false}
+
+/* ---------- タッチ操作（モード2：左＝上昇・下降と旋回、右＝前後と左右） ---------- */
+const TCH={on:matchMedia('(pointer:coarse)').matches,L:{x:0,y:0,id:null},R:{x:0,y:0,id:null}};
+function touchZone(el,s){const base=el.querySelector('.base'),knob=el.querySelector('.knob'),R=56;let ox=0,oy=0;
+  const put=(x,y,kx,ky)=>{base.style.left=x+'px';base.style.top=y+'px';knob.style.left=kx+'px';knob.style.top=ky+'px'};
+  const home=()=>{const r=el.getBoundingClientRect();ox=r.width/2;oy=Math.max(70,r.height-110);put(ox,oy,ox,oy);el.classList.remove('act')};
+  el.addEventListener('pointerdown',e=>{if(s.id!=null)return;s.id=e.pointerId;try{el.setPointerCapture(e.pointerId)}catch(_){}const r=el.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;put(ox,oy,ox,oy);el.classList.add('act');e.preventDefault()});
+  el.addEventListener('pointermove',e=>{if(e.pointerId!==s.id)return;const r=el.getBoundingClientRect();let dx=e.clientX-r.left-ox,dy=e.clientY-r.top-oy;const d=Math.hypot(dx,dy);if(d>R){dx*=R/d;dy*=R/d}
+    put(ox,oy,ox+dx,oy+dy);s.x=dx/R;s.y=-dy/R});
+  const up=e=>{if(e.pointerId!==s.id)return;s.id=null;s.x=s.y=0;home()};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  return home}
+const tHomes=[touchZone($('#tzL'),TCH.L),touchZone($('#tzR'),TCH.R)];
+window.addEventListener('touchstart',()=>{TCH.on=true},{passive:true});
+function touchVis(){const show=TCH.on&&mode==='run',el=$('#touch');if(el.hidden!==show)return;el.hidden=!show;document.body.classList.toggle('touch',show);if(show)tHomes.forEach(f=>f())}
+
 let last=performance.now();
 const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();
 function frame(now){
@@ -1111,6 +1296,8 @@ function frame(now){
   if(wiz){if(mode==='menu')wizTick(dt);else wiz=null}
   if(mode==='menu'&&$('#padCfg').open){const pad=getPad();document.querySelectorAll('.bar').forEach(b=>{const a=AX[b.dataset.k];let v=pad?(pad.axes[a.i]||0):0;if(a.inv)v=-v;const i=b.firstChild;i.style.left=(v<0?50+v*50:50)+'%';i.style.width=Math.abs(v)*50+'%'})}
   if(mode==='run'){simT+=dt;step(dt,inp);judge(dt,inp)}
+  if(NET.on)netFrame(dt);
+  touchVis();
   // render
   drone.position.set(st.u,st.y+0.07,-st.v);drone.rotation.set(-st.tiltF,-st.yaw,-st.tiltR);
   props.forEach((p,i)=>p.rotation.y=st.prop*(i%2?1:-1));
@@ -1135,7 +1322,15 @@ camLook.set(0,2,-2.5);
 /* ---------- wire up ---------- */
 document.querySelectorAll('.course').forEach(b=>b.addEventListener('click',()=>startCourse(b.dataset.c)));
 $('#bMenu').onclick=openMenu;$('#bView').onclick=()=>{cycleView()};
-$('#rAgain').onclick=()=>startCourse(courseKey);$('#rMenu').onclick=openMenu;
+$('#rAgain').onclick=()=>NET.on?backToLobby():startCourse(courseKey);$('#rMenu').onclick=()=>NET.on?netLeave():openMenu();
+$('#kItem').onclick=useItem;
+$('#nHost').onclick=()=>netOpen(true);$('#nJoin').onclick=()=>netOpen(false);$('#nBack').onclick=()=>{courseKey='online';openMenu()};
+$('#nPass').addEventListener('keydown',e=>{if(e.key==='Enter')netOpen(false)});
+$('#nStart').onclick=hostStart;$('#nLeave').onclick=()=>{netClose();nMsg('部屋から退出しました。');openLobby()};
+$('#nCopy').onclick=async()=>{const url=location.origin+location.pathname+'#room='+encodeURIComponent(NET.pass);
+  try{await navigator.clipboard.writeText(url);nMsg('招待リンクをコピーしました。LINEなどで友達に送ってください。')}catch(e){nMsg('招待リンク：'+url)}};
+$('#nName').value=store.get('netName','');
+window.addEventListener('pagehide',netClose);
 const sw=$('#sWind');sw.value=S.wind;$('#sWindV').textContent=S.wind+' m/s';sw.oninput=()=>{S.wind=+sw.value;$('#sWindV').textContent=S.wind+' m/s';store.set('wind',S.wind);wind.base=S.wind};
 const sv=$('#sVoice');sv.checked=S.voice;sv.onchange=()=>{S.voice=sv.checked;store.set('voice',S.voice)};
 const sm=$('#sMini');sm.checked=S.mini;sm.onchange=()=>{S.mini=sm.checked;store.set('mini',S.mini)};
@@ -1150,6 +1345,9 @@ window.addEventListener('gamepadconnected',e=>{const el=$('#padStat');el.textCon
 window.addEventListener('gamepaddisconnected',()=>{const el=$('#padStat');el.textContent='未接続（ボタンを押すと認識）';el.className='';padSeen=null});
 
 setSel(0);drawMarkings(course);setPylons(course.pylons,course.pylonColor);pilotMark.position.set(0,.03,course.pilot);updateBest();
+// 招待リンク（#room=合言葉）で開いたら、合言葉を入れた状態でロビーを出す
+{const m=location.hash.match(/room=([^&]+)/);if(m){try{$('#nPass').value=decodeURIComponent(m[1])}catch(e){}
+  history.replaceState(null,'',location.pathname+location.search);openLobby();nMsg('招待されました。名前を入れて「部屋に入る」を押してください。')}}
 requestAnimationFrame(frame);
 })();
 </script>
