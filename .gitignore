@@ -1,0 +1,21 @@
+# secrets
+.env
+.env.*
+*.pem
+*.key
+
+# dependencies / build output
+node_modules/
+dist/
+build/
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# logs / temp
+*.log
+*.tmp

@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
+<title>二等実技トレーナー</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<style>
+/* Layout: full-bleed 3D field seen from the pilot's standing position; examiner banner on top, instruments in the corners. Single daylight look by choice. */
+:root{
+  --sky:#c9dde6;
+  --ink:#1b2420;
+  --paper:#f5f3ea;
+  --paper-line:#dcd8c8;
+  --signal:#e2581a;
+  --ok:#2c7a4b;
+  --ok-soft:#c4ebcf;
+  --warn:#b88a00;
+  --bad:#bf2f1d;
+  --hud:rgba(17,25,21,.80);
+  --hud-fg:#edf2ec;
+  --hud-dim:#a9b8ad;
+  --muted:#5b685f;
+  --f-disp:'Dela Gothic One','Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+  --f-body:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic','Meiryo',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding-top:calc(env(safe-area-inset-top,0px) + 12px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.panel{background:var(--hud);color:var(--hud-fg);border-radius:6px;padding:10px 12px;pointer-events:auto}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.lbl{font-size:10px;letter-spacing:.12em;color:var(--hud-dim);text-transform:uppercase}
+#inst{flex:1 1 320px;max-width:560px;min-width:0;background:var(--paper);color:var(--ink);border-radius:6px;padding:10px 14px;box-shadow:0 2px 0 var(--paper-line)}
+#inst .who{display:inline-block;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:#fff;background:var(--signal);padding:2px 7px;border-radius:3px;margin-bottom:4px}
+#inst .txt{font-size:17px;font-weight:700;line-height:1.45;text-wrap:balance}
+#inst .sub{font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--f-mono)}
+#inst .who{transition:background .2s}
+#inst .who.ok{background:var(--ok)}
+#inst.clear{animation:clr 1s ease-out}
+@keyframes clr{0%{background:var(--ok-soft);transform:scale(1.04);box-shadow:0 0 0 4px var(--ok)}100%{background:var(--paper);transform:scale(1);box-shadow:0 2px 0 var(--paper-line)}}
+#iProg{display:flex;gap:3px;margin-top:7px}
+#iProg i{flex:1;height:5px;border-radius:2px;background:var(--paper-line);transition:background .3s}
+#iProg i.on{background:var(--ok)}
+#iProg i.now{background:var(--signal)}
+#tele{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13px;min-width:0}
+#tele b{font-weight:500}
+.chip{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 7px;border-radius:3px;font-weight:500}
+.chip.gps{background:#2c7a4b;color:#fff}.chip.atti{background:var(--signal);color:#fff}
+#scoreBox{text-align:right;min-width:150px}
+#score{font-family:var(--f-disp);font-size:40px;line-height:1}
+#timer{font-size:13px;margin-top:4px}
+#deds{list-style:none;margin:8px 0 0;padding:0;max-height:34vh;overflow:auto;font-size:12px;display:flex;flex-direction:column;gap:3px;text-align:left}
+#deds li{display:flex;gap:8px;align-items:baseline}
+#deds .p{font-family:var(--f-mono);color:#ffb08a;min-width:2.2em}
+#deds .p.n{color:var(--hud-dim)}
+#bottom{align-items:flex-end}
+#sticks,#mini{display:block}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+button{font-family:var(--f-body);font-size:13px;border:0;border-radius:4px;padding:6px 10px;cursor:pointer;background:#e8e4d6;color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--paper)}
+.panel button{background:rgba(255,255,255,.12);color:var(--hud-fg)}
+
+/* overlays */
+.ov{position:fixed;inset:0;background:rgba(20,30,26,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;pointer-events:auto;
+  padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{background:var(--paper);color:var(--ink);border-radius:8px;max-width:760px;width:100%;padding:24px 24px 20px;display:flex;flex-direction:column;gap:18px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.card h1{font-family:var(--f-disp);font-weight:400;font-size:clamp(26px,5vw,38px);margin:0;line-height:1.1;text-wrap:balance}
+.card .lead{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.6;max-width:62ch}
+.courses{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.course{text-align:left;background:#fff;border:1px solid var(--paper-line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.course:hover{border-color:var(--ink)}
+.course.sel{border-color:var(--signal);box-shadow:0 0 0 2px var(--signal)}
+.course.sel .nm::before{content:'▶ ';color:var(--signal)}
+.course .nm{font-family:var(--f-disp);font-size:18px}
+.course .spec{font-family:var(--f-mono);font-size:11px;color:var(--signal)}
+.course .ds{font-size:12.5px;color:var(--muted);line-height:1.55}
+.course .best{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px;font-size:13px}
+.settings label{display:flex;align-items:center;gap:8px}
+.settings input[type=range]{flex:1;min-width:0}
+.sec{font-size:11px;letter-spacing:.14em;color:var(--muted);font-family:var(--f-mono);margin-bottom:6px}
+details{border-top:1px solid var(--paper-line);padding-top:12px;font-size:13px}
+summary{cursor:pointer;font-weight:700}
+.axes{display:grid;grid-template-columns:auto auto auto 1fr;gap:6px 10px;align-items:center;margin-top:10px}
+.bar{height:8px;background:#e4e0d2;border-radius:4px;position:relative;overflow:hidden;min-width:60px}
+.bar i{position:absolute;top:0;bottom:0;left:50%;background:var(--signal);width:0}
+.keys{font-size:12.5px;color:var(--muted);line-height:1.8}
+.keys kbd{font-family:var(--f-mono);font-size:11px;background:#fff;border:1px solid var(--paper-line);border-radius:3px;padding:0 5px;color:var(--ink)}
+.note{font-size:11.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--paper-line);padding-top:10px}
+#padStat{font-family:var(--f-mono);font-size:12px}
+#padStat.on{color:var(--ok)}
+/* result */
+.stamp{font-family:var(--f-disp);font-size:44px;line-height:1;display:inline-block;padding:6px 16px;border:4px solid currentColor;border-radius:6px;transform:rotate(-4deg)}
+.stamp.pass{color:var(--ok)}.stamp.fail{color:var(--bad)}
+.rhead{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.rnum{font-family:var(--f-mono);font-size:14px;line-height:1.8}
+.rnum b{font-family:var(--f-disp);font-size:30px;font-weight:400}
+#rlist{list-style:none;margin:0;padding:0;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+#rlist li{display:grid;grid-template-columns:3.2em 3.6em 1fr;gap:8px;border-bottom:1px dashed var(--paper-line);padding-bottom:4px}
+#rlist .p{font-family:var(--f-mono);color:var(--bad)}
+#rlist .t{font-family:var(--f-mono);color:var(--muted);font-size:12px}
+#toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--f-disp);font-size:30px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5);pointer-events:none;opacity:0;transition:opacity .2s;text-align:center;padding:0 16px}
+@media (max-width:600px){#inst .txt{font-size:15px}#score{font-size:32px}#sticks{width:170px;height:80px}#mini{width:120px;height:120px}}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}#inst.clear{animation:none}}
+</style>
+
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="ui">
+  <div class="row" id="top">
+    <div class="panel" id="tele">
+      <span class="lbl">mode</span><span id="tMode"><span class="chip gps">GPS</span></span>
+      <span class="lbl">高度</span><b class="mono" id="tAlt">0.0 m</b>
+      <span class="lbl">速度</span><b class="mono" id="tSpd">0.0 m/s</b>
+      <span class="lbl">機首</span><b class="mono" id="tHdg">0°</b>
+      <span class="lbl">風</span><b class="mono" id="tWind">—</b>
+    </div>
+    <div id="inst"><span class="who">試験員</span><div class="txt" id="iTxt">メニューから科目を選んでください。</div><div class="sub" id="iSub"></div><div id="iProg"></div></div>
+    <div class="panel" id="scoreBox">
+      <div class="lbl">持ち点</div>
+      <div id="score">100</div>
+      <div class="mono" id="timer">0:00 / 8:00</div>
+      <ul id="deds"></ul>
+      <div class="btnrow" style="justify-content:flex-end"><button id="bView" type="button">視点</button><button id="bMenu" type="button">メニュー</button></div>
+    </div>
+  </div>
+  <div class="row" id="bottom">
+    <canvas id="sticks" class="panel" width="440" height="200" style="width:220px;height:100px;padding:0"></canvas>
+    <canvas id="mini" class="panel" width="320" height="320" style="width:160px;height:160px;padding:0"></canvas>
+  </div>
+</div>
+<div id="toast"></div>
+
+<div class="ov" id="menu">
+  <div class="card">
+    <div>
+      <h1>二等実技トレーナー</h1>
+      <p class="lead">回転翼（マルチローター）基本の実技3科目を、操縦者の立ち位置から見た視点で練習します。送信機はモード2。持ち点100からの減点式で、70点以上が合格です。</p>
+    </div>
+    <div>
+      <div class="sec">科目　十字キー・左スティックで選んで、A または ＋ で開始</div>
+      <div class="courses">
+        <button class="course" data-c="square" type="button"><span class="nm">スクエア飛行</span><span class="spec">GNSS ON ・ 高度3.5m ・ 制限8分</span><span class="ds">A→B→C→D→E→Aを直線で。機首を常に進行方向へ向け、角ごとに90°旋回する。</span><span class="best" data-best="square"></span></button>
+        <button class="course" data-c="eight" type="button"><span class="nm">8の字飛行</span><span class="spec">GNSS ON ・ 高度1.5m ・ 制限8分</span><span class="ds">直径約5mの円で8の字を連続2周。機首は進行方向。円を内側へ切り込むと不合格。</span><span class="best" data-best="eight"></span></button>
+        <button class="course" data-c="atti" type="button"><span class="nm">異常事態における飛行</span><span class="spec">ATTI（位置安定OFF）・ 高度3.5m ・ 制限6分</span><span class="ds">風で流される機体を当て舵で止める。機首は前方固定で左右移動、指示が出たら緊急着陸地点へ最短で。</span><span class="best" data-best="atti"></span></button>
+        <button class="course" data-c="free" type="button"><span class="nm">自由練習</span><span class="spec">採点なし ・ GPS⇄ATTI切替</span><span class="ds">ホバリングや機首を手前に向けた操作など、苦手な動きだけを繰り返す。</span><span class="best"></span></button>
+      </div>
+    </div>
+    <div>
+      <div class="sec">設定</div>
+      <div class="settings">
+        <label for="sWind">風速 <input id="sWind" type="range" min="0" max="5" step="0.5" value="1.5"><span class="mono" id="sWindV">1.5 m/s</span></label>
+        <label for="sVoice"><input id="sVoice" type="checkbox" checked> 試験員の指示を読み上げる</label>
+        <label for="sSfx"><input id="sSfx" type="checkbox" checked> お題クリア時の効果音</label>
+        <label for="sMini"><input id="sMini" type="checkbox" checked> ミニマップを表示（本番にはありません）</label>
+        <label for="sExpo"><input id="sExpo" type="checkbox"> スティックを中央付近で穏やかに（エクスポ）</label>
+        <label for="sLock">左スティックの斜め混入を抑える <select id="sLock"><option value="0">なし</option><option value="0.3">弱</option><option value="0.5">強</option></select></label>
+      </div>
+    </div>
+    <details id="padCfg">
+      <summary>コントローラー <span id="padStat">未接続（ボタンを押すと認識）</span></summary>
+      <p class="keys" style="margin:8px 0 0">スティックを動かして、各機能のバーが正しく動くか確認してください。ずれていたら「自動設定」で、画面の指示どおりにスティックを倒すだけで登録できます。ドローンシム対応の送信機も同じ手順で使えます。</p>
+      <div class="btnrow"><button id="bWiz" type="button" class="primary">自動設定を始める</button></div>
+      <p id="wizMsg" style="margin:6px 0 0;font-weight:700;font-size:14px" aria-live="polite"></p>
+      <div class="axes" id="axes"></div>
+    </details>
+    <div class="keys">
+      <div><b>ゲームパッド</b>：<kbd>十字キー</kbd> 科目を選ぶ　<kbd>A</kbd><kbd>＋</kbd> 開始・やり直し　<kbd>Y</kbd> 視点切替　<kbd>X</kbd> GPS⇄ATTI（自由練習）　<kbd>B</kbd> メニュー</div>
+      <div><b>PlayStationのパッド</b>：A＝<kbd>×</kbd>　B＝<kbd>○</kbd>　X＝<kbd>□</kbd>　Y＝<kbd>△</kbd>　＋＝<kbd>OPTIONS</kbd>　（Switchプロコンは本体の表記どおり）</div>
+      <div><b>キーボード（予備）</b>：<kbd>W</kbd><kbd>S</kbd> 上昇・下降　<kbd>A</kbd><kbd>D</kbd> 旋回　<kbd>↑</kbd><kbd>↓</kbd> 前後　<kbd>←</kbd><kbd>→</kbd> 左右　<kbd>←</kbd><kbd>→</kbd> 科目を選ぶ（メニュー）　<kbd>Enter</kbd> 開始　<kbd>R</kbd> やり直し（飛行中も可）　<kbd>V</kbd> 視点　<kbd>G</kbd> GPS⇄ATTI　<kbd>Esc</kbd> メニュー</div>
+    </div>
+    <p class="note">減点の基準（5m/s以上で不合格、減点区画進入−5、機首方向不良−1、着陸は直径2mの円内、制限時間など）は国土交通省「二等無人航空機操縦士実地試験実施細則（回転翼航空機・マルチローター）」に沿っています。コースの一辺の長さや経路の幅は細則の図が読めないため目安で、通っているスクールのコースと違う場合があります。</p>
+  </div>
+</div>
+
+<div class="ov" id="result" hidden>
+  <div class="card">
+    <div class="rhead">
+      <span class="stamp" id="rStamp">合格</span>
+      <div class="rnum"><div id="rCourse">スクエア飛行</div><div>持ち点 <b id="rScore">100</b> / 100</div><div id="rTime">所要 0:00</div></div>
+    </div>
+    <div id="rFail" style="font-weight:700;color:var(--bad)"></div>
+    <div><div class="sec">減点の内訳</div><ul id="rlist"></ul></div>
+    <div class="btnrow"><button class="primary" id="rAgain" type="button">もう一度（A / R）</button><button id="rMenu" type="button">科目を選ぶ（B）</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem('dr2_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dr2_'+k,JSON.stringify(v))}catch(e){}}};
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmtT=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const angWrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
+
+/* ---------- rules (細則 準拠) ---------- */
+const RULE={okW:1.0,failW:2.5,reach:1.0,padR:1.0,danger:5.0,pass:70,hoverSec:5};
+
+/* ---------- course definitions (u = 操縦者から見て右, v = 奥) ---------- */
+const line=(a,b,o)=>Object.assign({type:'line',a,b},o||{});
+const arc=(c,r,t0,t1,o)=>Object.assign({type:'arc',c,r,t0,t1},o||{});
+const arcPt=(c,r,t)=>[c[0]+r*Math.cos(t),c[1]+r*Math.sin(t)];
+const H=Math.PI/2;
+const COURSES={
+  square:{name:'スクエア飛行',alt:3.5,limit:480,gps:true,nose:'travel',pilot:8.5,
+    pads:[{n:'A',p:[0,0]}],labels:{B:[4,0],C:[4,8],D:[-4,8],E:[-4,0]},pylons:[[4,0],[4,8],[-4,8],[-4,0]],pylonColor:0xd8251a,
+    build(){const A=[0,0],B=[4,0],C=[4,8],D=[-4,8],E=[-4,0];
+      return[line(A,B,{say:'機首を進行方向に向けて、B地点へ移動してください。'}),line(B,C,{say:'C地点へ移動してください。'}),line(C,D,{say:'D地点へ移動してください。'}),line(D,E,{say:'E地点へ移動してください。'}),line(E,A,{say:'A地点へ移動してください。'})]},
+    land:[0,0],landName:'A地点'},
+  eight:{name:'8の字飛行',alt:1.5,limit:480,gps:true,nose:'travel',pilot:6.5,
+    pads:[{n:'A',p:[0,0]}],labels:{X:[0,4]},pylons:[[2.5,4],[-2.5,4]],
+    build(){const R=[2.5,4],L=[-2.5,4],r=2.5,legs=[line([0,0],[0,4],{say:'8の字の交点まで前進してください。'})];
+      for(let lap=0;lap<2;lap++){
+        for(let q=0;q<4;q++)legs.push(arc(R,r,Math.PI-q*H,Math.PI-(q+1)*H,q?{}:{say:lap?'2周目。右の円へ。':'右の円から、8の字を連続2周してください。'}));
+        for(let q=0;q<4;q++)legs.push(arc(L,r,q*H,(q+1)*H,q?{}:{say:'左の円へ。'}));
+      }
+      legs.push(line([0,4],[0,0],{say:'A地点の上空へ戻ってください。'}));return legs},
+    land:[0,0],landName:'A地点'},
+  atti:{name:'異常事態における飛行',alt:3.5,limit:360,gps:false,nose:'fixed',pilot:8.5,
+    pads:[{n:'A',p:[0,0]},{n:'E1',p:[-4,0],em:true},{n:'E2',p:[4,0],em:true}],labels:{B:[0,4],C:[-4,4],D:[4,4]},pylons:[],
+    build(){const A=[0,0],B=[0,4],C=[-4,4],D=[4,4];
+      return[line(A,B,{say:'機首は前方のまま、B地点へ前進してください。'}),line(B,C,{say:'機首は前方のまま、左のC地点へ移動してください。'}),line(C,D,{say:'右のD地点へ移動してください。'}),line(D,C,{say:'左のC地点へ移動してください。'}),line(C,D,{say:'右のD地点へ移動してください。'}),line(D,C,{say:'左のC地点へ移動してください。'})]},
+    land:[0,0],landName:'A地点'},
+};
+COURSES.free=Object.assign({},COURSES.square,{name:'自由練習',limit:0});
+
+/* ---------- settings ---------- */
+const S={sfx:store.get('sfx',true),lock:store.get('lock',0.3),wind:store.get('wind',1.5),voice:store.get('voice',true),mini:store.get('mini',true),expo:store.get('expo',false),view:'pilot'};
+const AXDEF={thr:{i:1,inv:true},yaw:{i:0,inv:false},ele:{i:3,inv:true},ail:{i:2,inv:false}};
+let AX=store.get('axes',AXDEF);
+for(const k in AXDEF) if(!AX[k]) AX[k]=Object.assign({},AXDEF[k]);
+
+/* ---------- three.js scene ---------- */
+const cv=$('#gl');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xc9dde6);
+scene.fog=new THREE.Fog(0xc9dde6,40,140);
+const camera=new THREE.PerspectiveCamera(55,1,0.05,400);
+scene.add(new THREE.HemisphereLight(0xeaf4ff,0x5d7a45,0.9));
+const sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(-20,40,10);scene.add(sun);
+
+function noiseTex(base,spots,n,size){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.fillStyle=base;x.fillRect(0,0,size,size);
+  for(let i=0;i<n;i++){x.fillStyle=spots[i%spots.length];const s=1+Math.random()*3;x.fillRect(Math.random()*size,Math.random()*size,s,s*2)}return c}
+const grassT=new THREE.CanvasTexture(noiseTex('#6e9650',['#5f8745','#7ba65b','#688f4a','#82ab62'],5000,256));
+grassT.wrapS=grassT.wrapT=THREE.RepeatWrapping;grassT.repeat.set(70,70);grassT.anisotropy=renderer.capabilities.getMaxAnisotropy();
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshLambertMaterial({map:grassT}));
+ground.rotation.x=-Math.PI/2;scene.add(ground);
+
+/* trees ring for depth cues */
+(function(){const trunkM=new THREE.MeshLambertMaterial({color:0x6b5038}),leafM=new THREE.MeshLambertMaterial({color:0x3f6b35});
+  for(let i=0;i<70;i++){const a=Math.random()*Math.PI*2,d=38+Math.random()*30,h=4+Math.random()*5;
+    const g=new THREE.Group();const t=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,h*.35,6),trunkM);t.position.y=h*.175;g.add(t);
+    const l=new THREE.Mesh(new THREE.ConeGeometry(h*.28,h*.8,7),leafM);l.position.y=h*.35+h*.4;g.add(l);
+    g.position.set(Math.cos(a)*d,0,Math.sin(a)*d-4);scene.add(g)}})();
+
+/* course markings painted on a transparent canvas */
+const MK={size:2048,span:30,umin:-15,vmax:18};
+const mkCanvas=document.createElement('canvas');mkCanvas.width=mkCanvas.height=MK.size;
+const mkTex=new THREE.CanvasTexture(mkCanvas);mkTex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+const mkPlane=new THREE.Mesh(new THREE.PlaneGeometry(MK.span,MK.span),new THREE.MeshBasicMaterial({map:mkTex,transparent:true,depthWrite:false}));
+mkPlane.rotation.x=-Math.PI/2;mkPlane.position.set(MK.umin+MK.span/2,0.02,-(MK.vmax-MK.span/2));scene.add(mkPlane);
+
+function legSamples(l){if(l.type==='line')return[l.a,l.b];const o=[];for(let k=0;k<=16;k++)o.push(arcPt(l.c,l.r,l.t0+(l.t1-l.t0)*k/16));return o}
+function drawMarkings(course){
+  const x=mkCanvas.getContext('2d'),s=MK.size/MK.span;
+  const P=p=>[(p[0]-MK.umin)*s,(MK.vmax-p[1])*s];
+  x.clearRect(0,0,MK.size,MK.size);x.lineJoin='round';x.lineCap='round';
+  const legs=course.build();
+  const path=()=>{x.beginPath();let last=null;for(const l of legs){const pts=legSamples(l);pts.forEach((p,i)=>{const q=P(p);if(i===0&&(!last||Math.hypot(last[0]-q[0],last[1]-q[1])>2))x.moveTo(q[0],q[1]);else x.lineTo(q[0],q[1]);last=q})}};
+  const band=(w,edge,fill,edgeCol)=>{path();x.globalCompositeOperation='source-over';x.strokeStyle=edgeCol;x.lineWidth=(w+edge)*s;x.stroke();
+    x.globalCompositeOperation='destination-out';x.lineWidth=(w-edge)*s;x.stroke();x.globalCompositeOperation='source-over';x.strokeStyle=fill;x.stroke()};
+  band(2*RULE.failW,0.14,'rgba(238,196,58,0.30)','rgba(196,46,28,0.95)');
+  band(2*RULE.okW,0.10,'rgba(255,255,255,0.16)','rgba(255,255,255,0.92)');
+  path();x.setLineDash([0.4*s,0.3*s]);x.strokeStyle='rgba(255,255,255,0.75)';x.lineWidth=0.05*s;x.stroke();x.setLineDash([]);
+  x.textAlign='center';x.textBaseline='middle';
+  for(const pd of course.pads){const q=P(pd.p);x.beginPath();x.arc(q[0],q[1],RULE.padR*s,0,Math.PI*2);x.lineWidth=0.09*s;x.strokeStyle=pd.em?'#ff8a3d':'#ffffff';x.stroke();
+    x.fillStyle=pd.em?'rgba(255,138,61,.22)':'rgba(255,255,255,.18)';x.fill();x.fillStyle=pd.em?'#ffd2b5':'#ffffff';x.font=`700 ${0.7*s}px sans-serif`;x.fillText(pd.n,q[0],q[1])}
+  for(const k in course.labels){const q=P(course.labels[k]);x.fillStyle='rgba(255,255,255,.95)';x.font=`700 ${0.8*s}px sans-serif`;x.fillText(k,q[0],q[1]);}
+  mkTex.needsUpdate=true;
+}
+
+/* pylons */
+const pylonGroup=new THREE.Group();scene.add(pylonGroup);
+function setPylons(list,col){while(pylonGroup.children.length)pylonGroup.remove(pylonGroup.children[0]);
+  const m=new THREE.MeshLambertMaterial({color:col||0xf06a1c}),w=new THREE.MeshLambertMaterial({color:0xffffff});
+  for(const p of list){const c=new THREE.Mesh(new THREE.ConeGeometry(.22,.7,16),m);c.position.set(p[0],.35,-p[1]);pylonGroup.add(c);
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(.15,.17,.1,16),w);b.position.set(p[0],.42,-p[1]);pylonGroup.add(b)}}
+
+/* windsock */
+const sock=new THREE.Group();(function(){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,4,8),new THREE.MeshLambertMaterial({color:0xdddddd}));pole.position.y=2;sock.add(pole);
+  const cone=new THREE.Mesh(new THREE.CylinderGeometry(.25,.12,1.4,12,1,true),new THREE.MeshLambertMaterial({color:0xf06a1c,side:THREE.DoubleSide}));cone.rotation.z=Math.PI/2;cone.position.x=.7;
+  const piv=new THREE.Group();piv.position.y=3.9;piv.add(cone);sock.add(piv);sock.userData.piv=piv;sock.userData.cone=cone})();
+sock.position.set(-7,0,-2);scene.add(sock);
+
+/* pilot marker (ground X) */
+const pilotMark=new THREE.Mesh(new THREE.RingGeometry(.25,.35,24),new THREE.MeshBasicMaterial({color:0xffffff}));pilotMark.rotation.x=-Math.PI/2;scene.add(pilotMark);
+
+/* drone */
+const drone=new THREE.Group();const props=[];const rearLeds=[];
+const glowTex=(function(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,255,255,.7)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
+(function(){const white=new THREE.MeshStandardMaterial({color:0xf2f2ef,roughness:.5}),grey=new THREE.MeshStandardMaterial({color:0x555b58,roughness:.6}),
+  red=new THREE.MeshStandardMaterial({color:0xe2401a,roughness:.5}),dark=new THREE.MeshStandardMaterial({color:0x222222});
+  const orange=new THREE.MeshStandardMaterial({color:0xff7a1a,roughness:.45}),black=new THREE.MeshStandardMaterial({color:0x1c1c1c,roughness:.6});
+  const bf=new THREE.Mesh(new THREE.BoxGeometry(.22,.09,.13),orange);bf.position.z=-.065;drone.add(bf);
+  const bb=new THREE.Mesh(new THREE.BoxGeometry(.22,.09,.13),black);bb.position.z=.065;drone.add(bb);
+  const cam=new THREE.Mesh(new THREE.BoxGeometry(.08,.07,.07),dark);cam.position.set(0,-.07,-.13);drone.add(cam);
+  const L=.24;
+  [[1,-1,true],[-1,-1,true],[1,1,false],[-1,1,false]].forEach(([sx,sz,front])=>{
+    const arm=new THREE.Mesh(new THREE.BoxGeometry(.035,.03,L*1.45),front?orange:black);arm.position.set(sx*L/2,0,sz*L/2);arm.rotation.y=Math.atan2(sx,sz);drone.add(arm);
+    const mot=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.05,12),dark);mot.position.set(sx*L,.03,sz*L);drone.add(mot);
+    const pr=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.006,24),new THREE.MeshBasicMaterial({color:0x111111,transparent:true,opacity:.28}));pr.position.set(sx*L,.06,sz*L);drone.add(pr);props.push(pr);
+    const col=front?0xff2a10:0x30ff60;
+    const led=new THREE.Group();led.position.set(sx*L,-.03,sz*L);
+    led.add(new THREE.Mesh(new THREE.SphereGeometry(.035,10,10),new THREE.MeshBasicMaterial({color:col})));
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:col,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));halo.scale.setScalar(.32);led.add(halo);
+    drone.add(led);if(!front)rearLeds.push(led);
+  });
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.04,.08,8),red);nose.rotation.x=-Math.PI/2;nose.position.set(0,.03,-.16);drone.add(nose);
+  const legM=grey;[[1,1],[-1,1],[1,-1],[-1,-1]].forEach(([sx,sz])=>{const g=new THREE.Mesh(new THREE.BoxGeometry(.015,.08,.015),legM);g.position.set(sx*.08,-.08,sz*.09);drone.add(g)});
+  drone.rotation.order='YXZ';drone.scale.setScalar(1.25)})();
+scene.add(drone);
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,24),new THREE.MeshBasicMaterial({color:0x0b140d,transparent:true,opacity:.4,depthWrite:false}));
+shadow.rotation.x=-Math.PI/2;scene.add(shadow);
+
+function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+window.addEventListener('resize',resize);resize();
+
+/* ---------- state ---------- */
+let mode='menu';      // menu | run | result
+let courseKey='square',course=COURSES.square;
+const st={u:0,v:0,y:0,vu:0,vv:0,vy:0,yaw:0,onGround:true,tiltF:0,tiltR:0,prop:0};
+let phase='idle',runT=0,deds=[],failMsg='',legs=[],legIdx=0,hoverT=0,hoverOut=false,freeGps=true,wind={u:0,v:0,base:0,dir:0},emerg=null,emergAt=0,emergClock=0,lastHighT=-9,smoothCool=0,landTarget=[0,0],landName='A地点',instSub='';
+let simT=0;
+
+function say(t){if(!S.voice||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=1.08;speechSynthesis.speak(u)}catch(e){}}
+function instruct(t,speak){$('#iTxt').textContent=t;if(speak!==false)say(t)}
+let toastTimer=0;function toast(t,col){const el=$('#toast');el.textContent=t;el.style.color=col||'#fff';el.style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.opacity=0,1400)}
+
+let progDone=0,progTotal=0,clearT=0,actx=null;
+function renderProg(){const el=$('#iProg');let h='';for(let i=0;i<progTotal;i++)h+='<i class="'+(i<progDone?'on':i===progDone?'now':'')+'"></i>';el.innerHTML=h}
+function chime(){if(!S.sfx)return;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();const t=actx.currentTime;
+  [880,1318].forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain(),s=t+i*.1;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.2,s+.01);g.gain.exponentialRampToValueAtTime(.001,s+.4);o.connect(g);g.connect(actx.destination);o.start(s);o.stop(s+.45)})}catch(e){}}
+function legTag(l){if(l.type==='arc')return l.c[0]>0?'右の円':'左の円';const all=Object.assign({},course.labels);course.pads.forEach(p=>all[p.n]=p.p);
+  for(const k in all){const p=all[k];if(Math.abs(p[0]-l.b[0])<.01&&Math.abs(p[1]-l.b[1])<.01)return k==='X'?'交点':k+'地点'}return '区間'}
+function stepClear(label){progDone=Math.min(progTotal,progDone+1);renderProg();chime();
+  const b=$('#inst');b.classList.remove('clear');void b.offsetWidth;b.classList.add('clear');
+  const w=$('#inst .who');w.textContent='✓ クリア';w.classList.add('ok');clearTimeout(clearT);clearT=setTimeout(()=>{w.textContent='試験員';w.classList.remove('ok')},1500)}
+function ded(p,msg){const e={p,msg,t:runT};deds.push(e);renderDeds();toast('−'+p+'　'+msg.split('：')[0],'#ffd0b8');return e}
+function score(){return 100-deds.reduce((a,b)=>a+b.p,0)}
+function renderDeds(){const ul=$('#deds');ul.innerHTML='';deds.slice().reverse().slice(0,6).forEach(d=>{const li=document.createElement('li');li.innerHTML=`<span class="p">−${d.p}</span><span></span>`;li.lastChild.textContent=d.msg;ul.appendChild(li)});$('#score').textContent=score()}
+function fail(msg){if(phase==='done')return;failMsg=msg;toast('不合格',''+getComputedStyle(document.documentElement).getPropertyValue('--bad'));endRun()}
+
+function resetDrone(){Object.assign(st,{u:0,v:0,y:0,vu:0,vv:0,vy:0,yaw:0,onGround:true,tiltF:0,tiltR:0})}
+function startCourse(key){
+  courseKey=key;course=COURSES[key];resetDrone();
+  deds=[];failMsg='';runT=0;legIdx=0;hoverT=0;hoverOut=false;emerg=null;emergClock=0;emergAt=4+Math.random()*9;smoothCool=0;
+  legs=course.build().map(l=>Object.assign(l,{zone:'ok',firstUsed:false,grace:null,misT:0,moveT:0,headE:null,altDed:false}));
+  wind.dir=Math.random()*Math.PI*2;wind.base=S.wind;
+  landTarget=course.land;landName=course.landName;
+  drawMarkings(course);setPylons(course.pylons,course.pylonColor);pilotMark.position.set(0,.03,course.pilot);
+  progDone=0;progTotal=key==='free'?0:2+legs.filter(l=>l.say).length;renderProg();
+  if(S.sfx){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}}
+  renderDeds();$('#result').hidden=true;$('#menu').hidden=true;mode='run';
+  $('#scoreBox').style.display=key==='free'?'none':'';
+  if(key==='free'){phase='free';instruct('自由練習。X（G）でGPS⇄ATTI、A（Enter）で機体をA地点に戻します。',false);$('#iSub').textContent='';}
+  else{phase='takeoff';instruct(`機首を前方に向けて離陸し、高度${course.alt}mで5秒間ホバリングしてください。`);}
+}
+function endRun(){phase='done';setTimeout(showResult,900)}
+function showResult(){
+  mode='result';const sc=score(),passed=!failMsg&&sc>=RULE.pass;
+  const stp=$('#rStamp');stp.textContent=passed?'合格':'不合格';stp.className='stamp '+(passed?'pass':'fail');
+  $('#rCourse').textContent=course.name;$('#rScore').textContent=failMsg?'—':sc;$('#rTime').textContent='所要 '+fmtT(runT)+' / 制限 '+fmtT(course.limit);
+  $('#rFail').textContent=failMsg?('中止：'+failMsg):(sc<RULE.pass?'持ち点が70点を下回りました。':'');
+  const ul=$('#rlist');ul.innerHTML='';
+  if(!deds.length){const li=document.createElement('li');li.innerHTML='<span></span><span></span><span>減点なし</span>';ul.appendChild(li)}
+  deds.forEach(d=>{const li=document.createElement('li');li.innerHTML=`<span class="p">−${d.p}</span><span class="t">${fmtT(d.t)}</span><span></span>`;li.lastChild.textContent=d.msg;ul.appendChild(li)});
+  if(passed){const b=store.get('best',{});if(b[courseKey]==null||sc>b[courseKey]){b[courseKey]=sc;store.set('best',b)}}
+  updateBest();$('#result').hidden=false;
+}
+function openMenu(){mode='menu';setSel(Math.max(0,cards.findIndex(c=>c.dataset.c===courseKey)));$('#result').hidden=true;$('#menu').hidden=false;phase='idle';updateBest();try{speechSynthesis.cancel()}catch(e){}}
+function updateBest(){const b=store.get('best',{});document.querySelectorAll('[data-best]').forEach(el=>{const v=b[el.dataset.best];el.textContent=v!=null?'自己ベスト '+v+'点（合格）':''})}
+
+/* ---------- input ---------- */
+const keys=new Set();const kb={thr:0,yaw:0,ele:0,ail:0};
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;keys.add(e.code);
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+  if(!e.repeat)action(e.code)});
+window.addEventListener('keyup',e=>keys.delete(e.code));
+window.addEventListener('blur',()=>keys.clear());
+function action(code){
+  if(mode==='menu'){
+    const am={ArrowUp:'navU',ArrowDown:'navD',ArrowLeft:'navL',ArrowRight:'navR'};if(am[code])code=am[code];
+    if(code.startsWith('nav')){moveSel(code);return}
+    if(code==='Enter'){if(!(document.activeElement&&document.activeElement.classList.contains('course')))startCourse(courseKey);return}
+  }
+  if(code==='Enter'||code==='Space'||code==='padA'){
+    if(mode==='result')startCourse(courseKey);
+    else if(mode==='run'&&phase==='free'){resetDrone()}
+    else if(mode==='run'&&phase==='done'){}
+    else if(mode==='menu'&&code==='padA')startCourse(courseKey);
+  }
+  if(code==='KeyR'&&mode!=='menu'){startCourse(courseKey);toast('やり直し')}
+  if(code==='Escape'||code==='padB'){if(mode!=='menu')openMenu()}
+  if(code==='KeyV'||code==='padY')S.view=S.view==='pilot'?'top':'pilot';
+  if((code==='KeyG'||code==='padX')&&phase==='free'){freeGps=!freeGps;toast(freeGps?'GPSモード':'ATTIモード')}
+}
+let prevBtn=[];let padSeen=null;let navHeld=null,navT=0;
+const cards=[...document.querySelectorAll('.course')];let sel=0;
+function setSel(i){sel=(i+cards.length)%cards.length;cards.forEach((c,j)=>c.classList.toggle('sel',j===sel));courseKey=cards[sel].dataset.c;course=COURSES[courseKey]}
+function moveSel(d){const t=cards[0].offsetTop,cols=cards.filter(c=>c.offsetTop===t).length||1;setSel(sel+({navL:-1,navR:1,navU:-cols,navD:cols})[d]);cards[sel].scrollIntoView({block:'nearest'})}
+cards.forEach((c,j)=>c.addEventListener('mouseenter',()=>setSel(j)));
+function getPad(){const ps=navigator.getGamepads?navigator.getGamepads():[];for(const g of ps)if(g&&g.connected)return g;return null}
+function dz(x){const d=0.07;if(Math.abs(x)<d)return 0;const y=Math.sign(x)*(Math.abs(x)-d)/(1-d);return S.expo?y*(0.45+0.55*y*y):y}
+function readInput(dt){
+  const pad=getPad();const inp={thr:0,yaw:0,ele:0,ail:0};
+  if(pad){
+    const ax=pad.axes;for(const k in AX){const a=AX[k];let v=ax[a.i]||0;if(a.inv)v=-v;inp[k]=dz(clamp(v,-1,1))}
+    if(S.lock>0){const f=(v,o)=>{const s=S.lock*Math.abs(o);return Math.sign(v)*Math.max(0,Math.abs(v)-s)/(1-s)};const t=f(inp.thr,inp.yaw),y=f(inp.yaw,inp.thr);inp.thr=t;inp.yaw=y}
+    const b=pad.buttons.map(x=>x&&x.pressed);
+    const nin=/057e|nintendo|pro controller/i.test(pad.id);
+    const map=nin?[[1,'padA'],[0,'padB'],[3,'padX'],[2,'padY'],[9,'padA']]:[[0,'padA'],[1,'padB'],[2,'padX'],[3,'padY'],[9,'padA']];
+    map.concat([[12,'navU'],[13,'navD'],[14,'navL'],[15,'navR']]).forEach(([i,c])=>{if(b[i]&&!prevBtn[i])action(c)});prevBtn=b;
+    if(mode==='menu'&&!wiz){const x=ax[0]||0,y=ax[1]||0,now=performance.now();let d=null;
+      if(y<-.6)d='navU';else if(y>.6)d='navD';else if(x<-.6)d='navL';else if(x>.6)d='navR';
+      if(d){if(d!==navHeld||now-navT>300){action(d);navHeld=d;navT=now}}else navHeld=null}
+    if(padSeen!==pad.id){padSeen=pad.id;const el=$('#padStat');el.textContent='接続中：'+pad.id.slice(0,40);el.className='on';buildAxes(pad.axes.length)}
+  }
+  const tgt={thr:(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0),yaw:(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0),ele:(keys.has('ArrowUp')?1:0)-(keys.has('ArrowDown')?1:0),ail:(keys.has('ArrowRight')?1:0)-(keys.has('ArrowLeft')?1:0)};
+  for(const k in kb){const d=tgt[k]-kb[k];kb[k]+=clamp(d,-3*dt,3*dt);if(Math.abs(inp[k])<Math.abs(kb[k]))inp[k]=kb[k]}
+  return inp;
+}
+
+/* axis auto-setup wizard */
+let wiz=null;
+const WSTEPS=[['thr','左スティックを「上」に倒したまま保持'],['yaw','左スティックを「右」に倒したまま保持'],['ele','右スティックを「上」に倒したまま保持'],['ail','右スティックを「右」に倒したまま保持']];
+function wizMsg(t){$('#wizMsg').textContent=t}
+function wizStart(){if(!getPad()){wizMsg('コントローラーのボタンを1回押してから、もう一度押してください。');return}
+  wiz={i:0,stage:'center',used:[],base:null,hold:0,res:{}};wizMsg('スティックから指を離してください…')}
+function wizTick(dt){const pad=getPad();if(!pad)return;const ax=Array.from(pad.axes);
+  if(wiz.stage==='center'){
+    if(!wiz.base){wiz.base=ax;wiz.hold=0;return}
+    if(ax.some((v,i)=>Math.abs(v-wiz.base[i])>0.05)){wiz.base=ax;wiz.hold=0}else wiz.hold+=dt;
+    if(wiz.hold>0.6){wiz.stage='move';wiz.hold=0;wizMsg((wiz.i+1)+' / 4　'+WSTEPS[wiz.i][1])}
+  }else{
+    let best=-1,bd=0;ax.forEach((v,i)=>{if(wiz.used.includes(i))return;const d=v-wiz.base[i];if(Math.abs(d)>Math.abs(bd)){bd=d;best=i}});
+    if(best>=0&&Math.abs(bd)>0.5){wiz.hold+=dt;
+      if(wiz.hold>0.4){wiz.res[WSTEPS[wiz.i][0]]={i:best,inv:bd<0};wiz.used.push(best);wiz.i++;
+        if(wiz.i>=WSTEPS.length){AX=wiz.res;store.set('axes',AX);buildAxes(pad.axes.length);wiz=null;wizMsg('設定しました。スティックを動かして、バーの向きを確認してください。');return}
+        wiz.stage='center';wiz.base=null;wizMsg('OK。指を離してください…')}
+    }else wiz.hold=0;
+  }}
+
+/* axis config UI */
+const AXN={thr:'スロットル（上昇・下降）',yaw:'ラダー（旋回）',ele:'エレベーター（前後）',ail:'エルロン（左右）'};
+function buildAxes(n){const box=$('#axes');box.innerHTML='';n=Math.max(n||4,4);
+  for(const k of ['thr','yaw','ele','ail']){
+    const lab=document.createElement('span');lab.textContent=AXN[k];
+    const sel=document.createElement('select');sel.id='ax_'+k;for(let i=0;i<n;i++){const o=document.createElement('option');o.value=i;o.textContent='軸 '+i;sel.appendChild(o)}sel.value=AX[k].i;
+    sel.onchange=()=>{AX[k].i=+sel.value;store.set('axes',AX)};
+    const inv=document.createElement('label');inv.innerHTML=`<input type="checkbox" id="inv_${k}"> 反転`;inv.firstChild.checked=AX[k].inv;inv.firstChild.onchange=e=>{AX[k].inv=e.target.checked;store.set('axes',AX)};
+    const bar=document.createElement('div');bar.className='bar';bar.innerHTML='<i></i>';bar.dataset.k=k;
+    box.append(lab,sel,inv,bar)}
+  const rs=document.createElement('button');rs.type='button';rs.textContent='初期設定に戻す';rs.onclick=()=>{AX=JSON.parse(JSON.stringify(AXDEF));store.set('axes',AX);buildAxes(n)};
+  box.appendChild(rs);
+}
+buildAxes(4);
+
+/* ---------- physics ---------- */
+function step(dt,inp){
+  const gps=phase==='free'?freeGps:course.gps;
+  const t=simT;
+  const g=1+0.35*Math.sin(t*0.63)+0.2*Math.sin(t*1.7+1.3);
+  const wdir=wind.dir+0.25*Math.sin(t*0.21);
+  wind.u=Math.cos(wdir)*wind.base*g;wind.v=Math.sin(wdir)*wind.base*g;
+  if(st.onGround){
+    st.vu=st.vv=st.vy=0;
+    if(inp.thr>0.25&&phase!=='done'&&phase!=='idle'){st.onGround=false;st.vy=0.6;st.y=0.01}
+  }
+  if(!st.onGround){
+    st.yaw=angWrap(st.yaw+inp.yaw*Math.PI/180*95*dt);
+    const vyT=inp.thr>0?inp.thr*2.2:inp.thr*1.8;
+    st.vy+=(vyT-st.vy)*Math.min(1,dt/0.28);
+    const s=Math.sin(st.yaw),c=Math.cos(st.yaw);
+    const cu=s*inp.ele+c*inp.ail, cvv=c*inp.ele-s*inp.ail;
+    if(gps){
+      const k=Math.min(1,dt/0.55);st.vu+=(cu*6-st.vu)*k;st.vv+=(cvv*6-st.vv)*k;
+    }else{
+      const drag=0.3;st.vu+=(cu*4.2+(wind.u-st.vu)*drag)*dt;st.vv+=(cvv*4.2+(wind.v-st.vv)*drag)*dt;
+    }
+    st.u+=st.vu*dt;st.v+=st.vv*dt;st.y+=st.vy*dt;
+    if(st.y>30){st.y=30;st.vy=Math.min(0,st.vy)}
+    if(st.y<=0){touchdown()}
+  }
+  const fT=st.onGround?0:inp.ele*(gps?0.32:0.38),rT=st.onGround?0:inp.ail*(gps?0.32:0.38);
+  st.tiltF+=(fT-st.tiltF)*Math.min(1,dt/0.15);st.tiltR+=(rT-st.tiltR)*Math.min(1,dt/0.15);
+  st.prop+=dt*(st.onGround&&phase==='idle'?0:(st.onGround?25:60));
+}
+function touchdown(){
+  const impact=-st.vy,hs=Math.hypot(st.vu,st.vv);
+  st.y=0;st.onGround=true;
+  if(phase==='free'||phase==='done'||phase==='idle'){st.vu=st.vv=st.vy=0;return}
+  if(impact>3||hs>2.5){st.vu=st.vv=st.vy=0;fail('墜落：強い衝撃で接地させた');return}
+  if(impact>1.3)ded(5,'離着陸不良：接地時に機体へ強い衝撃');
+  if(hs>0.7)ded(1,'ふらつき：機体を滑らせながら接地');
+  st.vu=st.vv=st.vy=0;
+  if(phase==='land'||phase==='emerg'){
+    const d=Math.hypot(st.u-landTarget[0],st.v-landTarget[1]);
+    if(d>RULE.padR)ded(5,`飛行経路逸脱：着陸地点（直径2m）の外に着陸（中心から${d.toFixed(1)}m）`);
+    progDone=progTotal-1;stepClear('着陸');
+    instruct('着陸を確認しました。お疲れさまでした。');endRun();
+  }else if(phase==='hover'||phase==='legs'){
+    ded(5,'指示と異なる飛行：指示前に着陸');instruct('指示がありません。再度離陸して続けてください。');
+  }
+}
+
+/* ---------- judging ---------- */
+function devTo(l,p){
+  if(l.type==='line'){const ax=l.b[0]-l.a[0],ay=l.b[1]-l.a[1],L2=ax*ax+ay*ay;let t=L2?((p[0]-l.a[0])*ax+(p[1]-l.a[1])*ay)/L2:0;t=clamp(t,0,1);return Math.hypot(p[0]-l.a[0]-ax*t,p[1]-l.a[1]-ay*t)}
+  return Math.abs(Math.hypot(p[0]-l.c[0],p[1]-l.c[1])-l.r);
+}
+const legEnd=l=>l.type==='line'?l.b:arcPt(l.c,l.r,l.t1);
+function trackZone(l,d,dt){
+  if(d>RULE.failW){fail('飛行空域逸脱：不合格区画に進入');return}
+  if(d>RULE.okW){
+    if(l.zone!=='pen'){l.zone='pen';
+      if(!l.firstUsed){l.firstUsed=true;l.grace=3;toast('減点区画！すぐ戻って','#ffe08a');$('#iSub').textContent='減点区画に進入。3秒以内に経路へ戻れば減点なし'}
+      else ded(5,'飛行経路逸脱：減点区画に進入');}
+    else if(l.grace!=null){l.grace-=dt;if(l.grace<=0){l.grace=null;ded(5,'指示と異なる飛行：減点区画から速やかに復帰しなかった')}}
+  }else if(l.zone==='pen'){l.zone='ok';l.grace=null}
+}
+function trackHeading(l,dt){
+  const hs=Math.hypot(st.vu,st.vv);let err=null;
+  if(course.nose==='travel'){if(hs>0.5)err=angWrap(st.yaw-Math.atan2(st.vu,st.vv))}
+  else err=st.yaw;
+  if(err==null)return;
+  l.moveT+=dt;const lim=course.nose==='travel'?35:30;
+  if(Math.abs(err)>lim*Math.PI/180){l.misT+=dt;if(l.misT>1.5&&!l.headE)l.headE=ded(1,'機首方向不良：一時的に指示と異なる向き')}
+}
+function finishLeg(l){
+  if(l.moveT>2&&l.misT/l.moveT>0.8){if(l.headE){deds.splice(deds.indexOf(l.headE),1)}ded(5,'指示と異なる飛行：区間を通して機首が指示と異なる向き')}
+}
+function judge(dt,inp){
+  if(phase==='free'||phase==='done'||phase==='idle')return;
+  runT+=dt;
+  if(runT>course.limit){fail('制限時間超過');return}
+  const sp=Math.hypot(st.vu,st.vv,st.vy);
+  if(sp>=RULE.danger){fail('危険な飛行：おおむね5m/s以上の速度');return}
+  for(const p of course.pylons){if(Math.hypot(st.u-p[0],st.v-p[1])<0.45&&st.y<0.9){fail('墜落：パイロンに衝突');return}}
+  // 急停止（不円滑）
+  const mag=Math.hypot(inp.ele,inp.ail);smoothCool-=dt;
+  if(mag>0.6)lastHighT=simT;
+  if(course.gps&&mag<0.12&&simT-lastHighT<0.12&&Math.hypot(st.vu,st.vv)>2.2&&smoothCool<=0){ded(1,'不円滑：合理的な理由のない急停止');smoothCool=4;lastHighT=-9}
+  const p=[st.u,st.v];
+  if(phase==='takeoff'){$('#iSub').textContent=`高度 ${st.y.toFixed(1)} / ${course.alt.toFixed(1)} m`;if(!st.onGround&&st.y>=course.alt-0.3){phase='hover';hoverT=0}}
+  else if(phase==='hover'){
+    if(Math.abs(st.y-course.alt)<0.5)hoverT+=dt;
+    if(Math.hypot(st.u,st.v)>RULE.padR&&!hoverOut){hoverOut=true;ded(5,'飛行経路逸脱：ホバリング中に直径2mの区画を出た')}
+    if(Math.hypot(st.u,st.v)>RULE.failW+1){fail('飛行空域逸脱：ホバリング位置から大きく離れた');return}
+    $('#iSub').textContent=`ホバリング ${Math.min(hoverT,5).toFixed(1)} / 5.0 秒　（高度±0.5m・A地点の真上）`;
+    if(hoverT>=RULE.hoverSec){phase='legs';legIdx=0;stepClear('ホバリング5秒');instruct(legs[0].say);$('#iSub').textContent=''}
+  }
+  else if(phase==='legs'){
+    const l=legs[legIdx];
+    trackZone(l,devTo(l,p),dt);if(phase==='done')return;
+    trackHeading(l,dt);
+    if(Math.abs(st.y-course.alt)>0.8&&!l.altDed){l.altDed=true;ded(1,'ふらつき：指示高度から大きく外れた')}
+    if(l.zone==='ok'&&l.grace==null)$('#iSub').textContent=`区間 ${legIdx+1} / ${legs.length}　経路からのずれ ${devTo(l,p).toFixed(1)} m`;
+    if(courseKey==='atti'&&legIdx>=2&&!emerg){emergClock+=dt;if(emergClock>=emergAt)triggerEmerg();}
+    if(phase!=='legs')return;
+    const e=legEnd(l);
+    if(Math.hypot(st.u-e[0],st.v-e[1])<RULE.reach+(l.type==='arc'?0.2:0)&&Math.abs(st.y-course.alt)<1.0){
+      finishLeg(l);legIdx++;
+      if(legIdx>=legs.length||legs[legIdx].say)stepClear(legTag(l));
+      if(legIdx>=legs.length){if(courseKey==='atti'){triggerEmerg()}else{phase='land';instruct(`${landName}に着陸してください。`);$('#iSub').textContent='直径2mの円内に、ゆっくり接地'}}
+      else if(legs[legIdx].say)instruct(legs[legIdx].say);
+    }
+  }
+  else if(phase==='emerg'){
+    trackZone(emerg,devTo(emerg,p),dt);if(phase==='done')return;
+    trackHeading(emerg,dt);
+    $('#iSub').textContent=`${landName}まで ${Math.hypot(st.u-landTarget[0],st.v-landTarget[1]).toFixed(1)} m　最短経路で`;
+  }
+  else if(phase==='land'){
+    if(Math.hypot(st.u-landTarget[0],st.v-landTarget[1])>RULE.failW+1){fail('飛行空域逸脱：着陸地点から大きく離れた');return}
+  }
+}
+function triggerEmerg(){
+  const pads=course.pads.filter(x=>x.em);const pd=pads[Math.floor(Math.random()*pads.length)];
+  landTarget=pd.p;landName='緊急着陸地点'+pd.n;
+  emerg={type:'line',a:[st.u,st.v],b:pd.p,zone:'ok',firstUsed:false,grace:null,misT:0,moveT:0,headE:null};
+  progDone=progTotal-1;renderProg();
+  phase='emerg';instruct(`緊急着陸してください。${pd.n}地点へ、最短の経路で着陸。`);
+}
+
+/* ---------- HUD ---------- */
+const stC=$('#sticks').getContext('2d'),mmC=$('#mini').getContext('2d');
+function drawSticks(inp){const c=stC,W=440,Hh=200;c.clearRect(0,0,W,Hh);
+  const box=(x0,lx,ly,t1,t2)=>{const s=140,y0=10;x0+=30;c.strokeStyle='rgba(237,242,236,.35)';c.lineWidth=2;c.strokeRect(x0,y0,s,s);
+    c.beginPath();c.moveTo(x0+s/2,y0);c.lineTo(x0+s/2,y0+s);c.moveTo(x0,y0+s/2);c.lineTo(x0+s,y0+s/2);c.strokeStyle='rgba(237,242,236,.15)';c.stroke();
+    c.fillStyle='#ff8a3d';c.beginPath();c.arc(x0+s/2+lx*s/2,y0+s/2-ly*s/2,11,0,Math.PI*2);c.fill();
+    c.fillStyle='rgba(237,242,236,.75)';c.font='19px sans-serif';c.textAlign='center';c.fillText(t1+'  '+t2,x0+s/2,y0+s+30)};
+  box(10,inp.yaw,inp.thr,'左','上下/旋回');box(230,inp.ail,inp.ele,'右','前後/左右')}
+function drawMini(){const c=mmC,W=320;c.clearRect(0,0,W,W);c.fillStyle='#5f8546';c.fillRect(0,0,W,W);
+  const span=18,u0=-9,v1=12,sMk=MK.size/MK.span;
+  c.drawImage(mkCanvas,(u0-MK.umin)*sMk,(MK.vmax-v1)*sMk,span*sMk,span*sMk,0,0,W,W);
+  const s=W/span,P=(u,v)=>[(u-u0)*s,(v1-v)*s];
+  const pp=P(0,-course.pilot);c.fillStyle='#fff';c.fillRect(pp[0]-4,Math.min(pp[1],W-8)-4,8,8);
+  const q=P(st.u,st.v);c.save();c.translate(q[0],q[1]);c.rotate(st.yaw);c.beginPath();c.moveTo(0,-11);c.lineTo(7,8);c.lineTo(0,4);c.lineTo(-7,8);c.closePath();c.fillStyle='#ff4a1c';c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke();c.restore();
+  if(phase==='emerg'||phase==='land'){const t=P(landTarget[0],landTarget[1]);c.strokeStyle='#ffd54a';c.lineWidth=3;c.beginPath();c.arc(t[0],t[1],s*1.2,0,Math.PI*2);c.stroke()}}
+let lastHud=0;
+function hud(inp){
+  const gps=phase==='free'?freeGps:course.gps;
+  $('#tMode').innerHTML=gps?'<span class="chip gps">GPS</span>':'<span class="chip atti">ATTI</span>';
+  $('#tAlt').textContent=st.y.toFixed(1)+' m';
+  const sp=Math.hypot(st.vu,st.vv,st.vy);const el=$('#tSpd');el.textContent=sp.toFixed(1)+' m/s';el.style.color=sp>4?'#ffb08a':'';
+  let h=Math.round(st.yaw*180/Math.PI);$('#tHdg').textContent=(h>0?'右':h<0?'左':'')+Math.abs(h)+'°';
+  const wd=Math.atan2(wind.u,wind.v)*180/Math.PI;
+  $('#tWind').textContent=wind.base?Math.hypot(wind.u,wind.v).toFixed(1)+' m/s '+dirName(wd):'無風';
+  if(phase!=='free')$('#timer').textContent=fmtT(runT)+' / '+fmtT(course.limit);
+  drawSticks(inp);$('#mini').hidden=!S.mini;if(S.mini)drawMini();
+  // windsock
+  const piv=sock.userData.piv,ws=Math.hypot(wind.u,wind.v);piv.rotation.y=Math.atan2(wind.v,wind.u);piv.rotation.z=-clamp(1-ws/4,0,1)*1.1;
+}
+function dirName(d){const n=['奥へ','右奥へ','右へ','右手前へ','手前へ','左手前へ','左へ','左奥へ'];return n[((Math.round(d/45)%8)+8)%8]}
+
+/* ---------- loop ---------- */
+let last=performance.now();
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  const inp=readInput(dt);
+  // live axis bars in menu
+  if(wiz){if(mode==='menu')wizTick(dt);else wiz=null}
+  if(mode==='menu'&&$('#padCfg').open){const pad=getPad();document.querySelectorAll('.bar').forEach(b=>{const a=AX[b.dataset.k];let v=pad?(pad.axes[a.i]||0):0;if(a.inv)v=-v;const i=b.firstChild;i.style.left=(v<0?50+v*50:50)+'%';i.style.width=Math.abs(v)*50+'%'})}
+  if(mode==='run'){simT+=dt;step(dt,inp);judge(dt,inp)}
+  // render
+  drone.position.set(st.u,st.y+0.07,-st.v);drone.rotation.set(-st.tiltF,-st.yaw,-st.tiltR);
+  props.forEach((p,i)=>p.rotation.y=st.prop*(i%2?1:-1));
+  const blinkOn=(now%1000)<500;rearLeds.forEach(l=>l.visible=blinkOn);
+  shadow.position.set(st.u,0.03,-st.v);shadow.material.opacity=0.42*clamp(1-st.y/14,0.1,1);
+  if(S.view==='pilot'){const pz=course.pilot;camPos.set(0,1.6,pz);const focus=new THREE.Vector3(0,course.alt*0.6,-2.5);const dp=new THREE.Vector3(st.u,st.y,-st.v);camLook.lerp(focus.lerp(dp,0.55),0.12)}
+  else{camPos.set(0,17,course.pilot+4);camLook.lerp(new THREE.Vector3(0,0,-3),0.2)}
+  camera.position.lerp(camPos,S.view==='pilot'?1:0.15);camera.lookAt(camLook);
+  if(now-lastHud>50){lastHud=now;hud(inp)}
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+camLook.set(0,2,-2.5);
+
+/* ---------- wire up ---------- */
+document.querySelectorAll('.course').forEach(b=>b.addEventListener('click',()=>startCourse(b.dataset.c)));
+$('#bMenu').onclick=openMenu;$('#bView').onclick=()=>{S.view=S.view==='pilot'?'top':'pilot'};
+$('#rAgain').onclick=()=>startCourse(courseKey);$('#rMenu').onclick=openMenu;
+const sw=$('#sWind');sw.value=S.wind;$('#sWindV').textContent=S.wind+' m/s';sw.oninput=()=>{S.wind=+sw.value;$('#sWindV').textContent=S.wind+' m/s';store.set('wind',S.wind);wind.base=S.wind};
+const sv=$('#sVoice');sv.checked=S.voice;sv.onchange=()=>{S.voice=sv.checked;store.set('voice',S.voice)};
+const sm=$('#sMini');sm.checked=S.mini;sm.onchange=()=>{S.mini=sm.checked;store.set('mini',S.mini)};
+$('#bWiz').onclick=wizStart;
+const sx=$('#sSfx');sx.checked=S.sfx;sx.onchange=()=>{S.sfx=sx.checked;store.set('sfx',S.sfx)};
+const sl=$('#sLock');sl.value=String(S.lock);sl.onchange=()=>{S.lock=+sl.value;store.set('lock',S.lock)};
+const se=$('#sExpo');se.checked=S.expo;se.onchange=()=>{S.expo=se.checked;store.set('expo',S.expo)};
+window.addEventListener('gamepadconnected',e=>{const el=$('#padStat');el.textContent='接続中：'+e.gamepad.id.slice(0,40);el.className='on';buildAxes(e.gamepad.axes.length)});
+window.addEventListener('gamepaddisconnected',()=>{const el=$('#padStat');el.textContent='未接続（ボタンを押すと認識）';el.className='';padSeen=null});
+
+setSel(0);drawMarkings(course);setPylons(course.pylons,course.pylonColor);pilotMark.position.set(0,.03,course.pilot);updateBest();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
