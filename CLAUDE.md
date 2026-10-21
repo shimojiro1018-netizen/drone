@@ -11,13 +11,13 @@
 - 部屋は合言葉方式。ホストが合言葉を決め、参加者は同じ合言葉を入れる。使用中なら別の合言葉を求める
 - 最大4人。ホストが中継する星型の接続
 - スマホ用のタッチ操作（モード2の仮想スティック2本）も作る
+- 合言葉は NFKC 正規化してハッシュ化し、Peer ID（nitoudrone-…）にする。招待リンクは `#room=合言葉`
+- PeerJS 1.5.4 は既定で peerjs.com の TURN 中継を使うので、直接つながらない回線でも多くは通る
 ## 運用ルール
 - 作業開始時は git pull --ff-only
 - 作業終了時は必ず commit と push（途中なら WIP と書く）
 - .env・キーはコミットしない。リポジトリは公開なので秘密情報を入れない
 - 2台（普段用ノートPC・GALLERIA）で使う。同時には作業しない
-- 合言葉は NFKC 正規化してハッシュ化し、Peer ID（nitoudrone-…）にする。招待リンクは `#room=合言葉`
-- PeerJS 1.5.4 は既定で peerjs.com の TURN 中継を使うので、直接つながらない回線でも多くは通る
 ## 動作確認のしかた
 - 会社のネットワーク（InterSafe WebFilter）では 0.peerjs.com が遮断される。ノートPCで試すときは手元に PeerServer を立てる
   - `npx peer --port 9000 --path /`（Git Bash では先頭に `MSYS_NO_PATHCONV=1` を付ける）
